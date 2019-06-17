@@ -43,7 +43,7 @@ void vtkwrite(string filename, MatrixXd connectivity, MatrixXd position, MatrixX
 
     writer << "\nPOLYGONS " << connectivity.rows() << " " << 5*connectivity.rows() << "\n";
     for(int i = 0; i < connectivity.rows(); i++)
-        writer << "4 " << connectivity(i,all).array()-1 << "\n";
+        writer << "4 " << connectivity(i,all) << "\n";
 
 
     writer << "\nPOINT_DATA " << position.rows() <<  " \n";

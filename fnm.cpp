@@ -4,22 +4,27 @@ vector<double> xgp = {-sqrt(3.0/5.0), 0, sqrt(3.0/5.0)};
 vector<double> wgp = {5.0/9.0, 8.0/9.0, 5.0/9.0};
 long ngp = wgp.size();
 
+// Note that with 0-indexed arrays, first dof is node*(#dofs), next is node*(#dofs)+1, and so on
 void boundary_conditions(VectorXd &vn, VectorXd &vn1){
   double bc;
-  VectorXd left = VectorXd::LinSpaced(21,1,421);
+  // LinSpaced(increment,start,end)
+  // Decrease the start and end by 1 (if taken from a 1-indexed mesh), to reflect 0-indexing
+  VectorXd left = VectorXd::LinSpaced(21,0,420);
+  // VectorXd left = VectorXd::LinSp(3,0,6);
   bc = -0.01;
   for(int i=0; i < left.size();i++){
     long node_bc = left(i);
-    long idof = node_bc*2-1;
+    long idof = node_bc*2;
     vn(idof) = bc;
     vn1(idof) = bc;
   }
 
-  VectorXd right = VectorXd::LinSpaced(21,21,441);
+  // VectorXd right = VectorXd::LinSpaced(3,2,8);
+  VectorXd right = VectorXd::LinSpaced(21,20,440);
   bc = 0.01;
   for(int i=0; i < right.size();i++){
     long node_bc = right(i);
-    long idof = node_bc*2-1;
+    long idof = node_bc*2;
     vn(idof) = bc;
     vn1(idof) = bc;
   }
@@ -91,13 +96,14 @@ void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXd &conn, double rho){
   long nelm = conn.rows();
   for(int i = 0; i < nelm; i++){
     if(true){ // Change this to reflect True for elements which don't have floating nodes activated
-      VectorXd nodes = conn(0,all);
+      VectorXd nodes = conn(i,all);
       MatrixXd xv = x(nodes,all);
       MatrixXd ml = quad_ml(xv,area,rho);
-      vector<double> dof = {nodes(0)*2-1, nodes(0)*2,
-                            nodes(1)*2-1, nodes(1)*2,
-                            nodes(2)*2-1, nodes(2)*2,
-                            nodes(3)*2-1, nodes(3)*2};
+
+      vector<double> dof = {nodes(0)*2, nodes(0)*2+1,
+                            nodes(1)*2, nodes(1)*2+1,
+                            nodes(2)*2, nodes(2)*2+1,
+                            nodes(3)*2, nodes(3)*2+1};
 
       mg(dof) = mg(dof) + ml.diagonal();
     }
@@ -113,15 +119,15 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXd &conn, double
   long nelm = conn.rows();
   for(int i = 0; i < nelm; i++){
     if(true){ // Change this to reflect True for elements which don't have floating nodes activated
-      VectorXd nodes = conn(0,all);
+      VectorXd nodes = conn(i,all);
       MatrixXd xv = x(nodes,all);
       MatrixXd kl = quad_kl(xv,area,E,nu);
-      vector<double> dof = {nodes(0)*2-1, nodes(0)*2,
-                            nodes(1)*2-1, nodes(1)*2,
-                            nodes(2)*2-1, nodes(2)*2,
-                            nodes(3)*2-1, nodes(3)*2};
+      vector<double> dof = {nodes(0)*2, nodes(0)*2+1,
+                            nodes(1)*2, nodes(1)*2+1,
+                            nodes(2)*2, nodes(2)*2+1,
+                            nodes(3)*2, nodes(3)*2+1};
       VectorXd u = un(dof);
-      cout << u << endl;
+      // cout << nodes << endl << endl;
 
       fi(dof) = fi(dof) + (kl*u);
     }
@@ -133,11 +139,21 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXd &conn, double
   // cout << area << endl;
 }
 
-int main(){
+int main(int argc, char* argv[]){
+  double tmax = 40, dt = 0.05;
+  if(argc == 2){
+    tmax = atof(argv[1]);
+  }
+  else if(argc == 3){
+    tmax = atof(argv[1]);
+    dt = atof(argv[2]);
+  }
+
   MatrixXd elements = load_csv<MatrixXd>("/home/hsharsh/fnm/elements.inp");
   MatrixXd nodes = load_csv<MatrixXd>("/home/hsharsh/fnm/nodes.inp");
 
-  MatrixXd conn = elements(all,seq(1,last));
+  // All coefficients are decreased by one for consistency with 0-indexing
+  MatrixXd conn = elements(all,seq(1,last)).array()-1;
   MatrixXd x = nodes(all,seq(1,last));
 
   long nnod = x.rows();
@@ -150,9 +166,7 @@ int main(){
 
   boundary_conditions(vn, vn1);
 
-
-  double t = 0, tmax = 0.05;
-  double dt = 0.05;
+  double t = 0;
 
   while(t <= tmax){
     VectorXd  mg = VectorXd::Ones((nodi-1));
@@ -179,12 +193,15 @@ int main(){
     boundary_conditions(vn,vn1);
 
     // Solver
-
-    cout << fi.head(15) << endl;
+    // cout << "Fi" << endl;
+    // cout << fi << endl << endl;
+    //
+    // cout << "U" << endl;
+    // cout << un << endl << endl;
     an1 = mg.array().inverse()*(fg-fi-lcg).array();
     vn1 = vn + an1*dt;
 
-    cout << an1.head(15) << endl;
+    // cout << an1.head(15) << endl;
 
     boundary_conditions(vn,vn1);
     // cout << vn1.head(15);
