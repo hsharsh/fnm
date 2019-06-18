@@ -1,152 +1,55 @@
 #include "utilities.cpp"
-
-vector<double> xgp = {-sqrt(3.0/5.0), 0, sqrt(3.0/5.0)};
-vector<double> wgp = {5.0/9.0, 8.0/9.0, 5.0/9.0};
-long ngp = wgp.size();
+#include "fe_functions.cpp"
 
 // Note that with 0-indexed arrays, first dof is node*(#dofs), next is node*(#dofs)+1, and so on
 void boundary_conditions(VectorXd &vn, VectorXd &vn1){
   double bc;
-  // LinSpaced(increment,start,end)
-  // Decrease the start and end by 1 (if taken from a 1-indexed mesh), to reflect 0-indexing
-  VectorXd left = VectorXd::LinSpaced(21,0,420);
-  // VectorXd left = VectorXd::LinSp(3,0,6);
+  // Syntax: LinSpaced(increment,start,end). Decrease the start and end by 1 (if taken from a 1-indexed mesh), to reflect 0-indexing
+  VectorXd bottom(25);
+  bottom <<    6,   7,  14,  77,  78,  79,  80,  81,  82,  83,  84,  85, 185, 186, 187, 188,
+            189, 190, 191, 192, 193, 194, 195, 196, 197;
+  bottom = bottom.array()-1;
   bc = -0.01;
+  for(int i=0; i < bottom.size();i++){
+    long node_bc = bottom(i);
+    long idof = node_bc*2+1;
+    vn(idof) = bc;
+    vn1(idof) = bc;
+  }
+
+  VectorXd top(26);
+  top <<   15,  16,  18, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 256, 257, 258,
+              259, 260, 261, 262, 263, 264, 265, 266, 267, 268;
+  top = top.array()-1;
+  bc = 0.01;
+  for(int i=0; i < top.size();i++){
+    long node_bc = top(i);
+    long idof = node_bc*2+1;
+    vn(idof) = bc;
+    vn1(idof) = bc;
+  }
+}
+
+void temporary_bc(VectorXd &vn, VectorXd &vn1){
+  double bc;
+  VectorXd left = VectorXd::LinSpaced(21,0,420);
+  bc = 0.01;
   for(int i=0; i < left.size();i++){
     long node_bc = left(i);
     long idof = node_bc*2;
     vn(idof) = bc;
     vn1(idof) = bc;
   }
-
-  // VectorXd right = VectorXd::LinSpaced(3,2,8);
-  VectorXd right = VectorXd::LinSpaced(21,20,440);
-  bc = 0.01;
-  for(int i=0; i < right.size();i++){
-    long node_bc = right(i);
-    long idof = node_bc*2;
-    vn(idof) = bc;
-    vn1(idof) = bc;
-  }
-}
-
-MatrixXd quad_kl(MatrixXd &xv, double &area, double E, double nu){
-  MatrixXd kl = MatrixXd::Zero(4*2,4*2);
-
-  for(int i = 0; i < ngp; i++){
-    for(int j = 0; j < ngp; j++){
-        double r = xgp[i], s = xgp[j];
-        MatrixXd B1(2,4), jac(2,2), B0(3,4), B3 = MatrixXd::Zero(4,8), Bjac = MatrixXd::Zero(4,4);
-        B1 << -(1-s)/4,  (1-s)/4, (1+s)/4, -(1+s)/4,
-              -(1-r)/4,  -(1+r)/4,  (1+r)/4,  (1-r)/4;
-        jac = (B1*xv).transpose();  // Check this for problems
-
-        B0 << 1, 0, 0, 0,
-              0, 0, 0, 1,
-              0, 1, 1, 0;
-
-
-        Bjac(seq(0,1),seq(0,1)) = jac.inverse();
-        Bjac(seq(2,3),seq(2,3)) = jac.inverse();
-
-
-        // Define B3
-        B3(seq(0,1),seq(0,last,2)) = B1;
-        B3(seq(2,3),seq(1,last,2)) = B1;
-
-        MatrixXd B = B0*Bjac*B3;
-        MatrixXd D(3,3);
-        D << 1-nu, 0, 0,
-              0, 1-nu, 0,
-              0, 0, 1-2*nu;
-        D = E/((1+nu)*(1-2*nu))*D.array();
-
-        kl = kl + B.transpose()*D*B*jac.determinant() * wgp[i] * wgp[j];
-        area = area + jac.determinant()* wgp[i] * wgp[j];
-    }
-  }
-  // cout << kl << endl << endl;
-  return kl;
-}
-
-MatrixXd quad_ml(MatrixXd &xv, double &area, double rho){
-  MatrixXd ml = MatrixXd::Zero(4*2,4*2);
-
-  double area_elem = 0;
-  for(int i = 0; i < ngp; i++){
-    for(int j = 0; j < ngp; j++){
-        double r = xgp[i], s = xgp[j];
-        MatrixXd B1(2,4), jac(2,2);
-        B1 << -(1-s)/4,  (1-s)/4, (1+s)/4, -(1+s)/4,
-              -(1-r)/4,  -(1+r)/4,  (1+r)/4,  (1-r)/4;
-        jac = (B1*xv).transpose();  // Check this for problems
-
-        area_elem = area_elem + jac.determinant()* wgp[i] * wgp[j];
-    }
-  }
-  area = area + area_elem;
-  ml = rho*(area_elem/4)*(MatrixXd::Identity(4*2,4*2)).array();
-
-  // cout << ml << endl;
-  return ml;
-}
-
-void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXd &conn, double rho){
-  double area = 0;
-  long nelm = conn.rows();
-  for(int i = 0; i < nelm; i++){
-    if(true){ // Change this to reflect True for elements which don't have floating nodes activated
-      VectorXd nodes = conn(i,all);
-      MatrixXd xv = x(nodes,all);
-      MatrixXd ml = quad_ml(xv,area,rho);
-
-      vector<double> dof = {nodes(0)*2, nodes(0)*2+1,
-                            nodes(1)*2, nodes(1)*2+1,
-                            nodes(2)*2, nodes(2)*2+1,
-                            nodes(3)*2, nodes(3)*2+1};
-
-      mg(dof) = mg(dof) + ml.diagonal();
-    }
-    else{
-      // Calls for floating nodes
-    }
-  }
-  // cout << area << endl;
-}
-
-void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXd &conn, double E, double nu){
-  double area = 0;
-  long nelm = conn.rows();
-  for(int i = 0; i < nelm; i++){
-    if(true){ // Change this to reflect True for elements which don't have floating nodes activated
-      VectorXd nodes = conn(i,all);
-      MatrixXd xv = x(nodes,all);
-      MatrixXd kl = quad_kl(xv,area,E,nu);
-      vector<double> dof = {nodes(0)*2, nodes(0)*2+1,
-                            nodes(1)*2, nodes(1)*2+1,
-                            nodes(2)*2, nodes(2)*2+1,
-                            nodes(3)*2, nodes(3)*2+1};
-      VectorXd u = un(dof);
-      // cout << nodes << endl << endl;
-
-      fi(dof) = fi(dof) + (kl*u);
-    }
-    else{
-      // Calls for floating nodes
-    }
-  }
-  // cout << fi.head(15) << endl;
-  // cout << area << endl;
 }
 
 int main(int argc, char* argv[]){
-  double tmax = 40, dt = 0.05;
+  double tmax = 10, dt = 0.05;
   if(argc == 2){
-    tmax = atof(argv[1]);
+    dt = atof(argv[1]);
   }
   else if(argc == 3){
-    tmax = atof(argv[1]);
-    dt = atof(argv[2]);
+    dt = atof(argv[1]);
+    tmax = atof(argv[2]);
   }
 
   MatrixXd elements = load_csv<MatrixXd>("/home/hsharsh/fnm/elements.inp");
@@ -164,12 +67,12 @@ int main(int argc, char* argv[]){
   VectorXd un = VectorXd::Zero(nnod*2), un1 = VectorXd::Zero(nnod*2);
   VectorXd vn = VectorXd::Zero(nnod*2), vn1 = VectorXd::Zero(nnod*2), an1 = VectorXd::Zero(nnod*2);
 
-  boundary_conditions(vn, vn1);
+  // boundary_conditions(vn, vn1);
 
   double t = 0;
 
   while(t <= tmax){
-    VectorXd  mg = VectorXd::Ones((nodi-1));
+    VectorXd  mg = VectorXd::Zero((nodi-1));
     VectorXd  fi = VectorXd::Zero((nodi-1));
     VectorXd  fg = VectorXd::Zero((nodi-1));
     VectorXd lcg = VectorXd::Zero((nodi-1));
@@ -189,25 +92,25 @@ int main(int argc, char* argv[]){
     // Linearized Global Mass matrix assembly
     assemble_mg(mg, x, conn, rho);
 
-    // Enforce boundary conditions
     boundary_conditions(vn,vn1);
 
-    // Solver
-    // cout << "Fi" << endl;
-    // cout << fi << endl << endl;
+    // cout << "fi" << endl;
+    // cout << fi.head(15) << endl << endl;
     //
-    // cout << "U" << endl;
-    // cout << un << endl << endl;
+    // cout << "mg" << endl;
+    // cout << mg.head(15) << endl << endl;
+    // Solver
     an1 = mg.array().inverse()*(fg-fi-lcg).array();
     vn1 = vn + an1*dt;
 
-    // cout << an1.head(15) << endl;
-
     boundary_conditions(vn,vn1);
-    // cout << vn1.head(15);
-    un1 = un + vn1*dt;
-    // cout << un1.head(15);
+    // if(t < 4.0){
+    //   temporary_bc(vn,vn1);
+    // }
 
+    un1 = un + vn1*dt;
+
+    // File writing operations
     MatrixXd xdef = MatrixXd::Zero(x.rows(),x.cols()+1);
 
     MatrixXd u = MatrixXd::Zero((int)un1.rows()/2,3), v = MatrixXd::Zero((int)vn1.rows()/2,3), a = MatrixXd::Zero((int)an1.rows()/2,3);

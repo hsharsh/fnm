@@ -1,0 +1,117 @@
+# -*- coding: mbcs -*-
+#
+# Abaqus/CAE Release 6.14-1 replay file
+# Internal Version: 2014_06_05-01.07.49 134264
+# Run by hsharsh on Tue Jun 18 11:31:29 2019
+#
+
+# from driverUtils import executeOnCaeGraphicsStartup
+# executeOnCaeGraphicsStartup()
+#: Executing "onCaeGraphicsStartup()" in the site directory ...
+from abaqus import *
+from abaqusConstants import *
+session.Viewport(name='Viewport: 1', origin=(0.0, 0.0), width=338.666656494141, 
+    height=208.409271240234)
+session.viewports['Viewport: 1'].makeCurrent()
+session.viewports['Viewport: 1'].maximize()
+from caeModules import *
+from driverUtils import executeOnCaeStartup
+executeOnCaeStartup()
+session.viewports['Viewport: 1'].partDisplay.geometryOptions.setValues(
+    referenceRepresentation=ON)
+openMdb(pathName='/home/hsharsh/fnm/mesh/Simple-square-mesh.cae')
+#: The model database "/home/hsharsh/fnm/mesh/Simple-square-mesh.cae" has been opened.
+session.viewports['Viewport: 1'].setValues(displayedObject=None)
+p = mdb.models['Model-1'].parts['Square plate']
+session.viewports['Viewport: 1'].setValues(displayedObject=p)
+a = mdb.models['Model-1'].rootAssembly
+session.viewports['Viewport: 1'].setValues(displayedObject=a)
+session.viewports['Viewport: 1'].assemblyDisplay.setValues(loads=ON, bcs=ON, 
+    predefinedFields=ON, connectors=ON, optimizationTasks=OFF, 
+    geometricRestrictions=OFF, stopConditions=OFF)
+del mdb.models['Model-1'].boundaryConditions['Right BC']
+session.viewports['Viewport: 1'].assemblyDisplay.setValues(step='Step-1')
+mdb.models['Model-1'].boundaryConditions['Left BC'].setValues(v1=0.01)
+session.viewports['Viewport: 1'].assemblyDisplay.setValues(loads=OFF, bcs=OFF, 
+    predefinedFields=OFF, connectors=OFF, adaptiveMeshConstraints=ON)
+mdb.models['Model-1'].ExplicitDynamicsStep(name='Step-2', previous='Step-1', 
+    timePeriod=26.0)
+session.viewports['Viewport: 1'].assemblyDisplay.setValues(step='Step-2')
+mdb.models['Model-1'].steps['Step-1'].setValues(timePeriod=4.0)
+session.viewports['Viewport: 1'].assemblyDisplay.setValues(loads=ON, bcs=ON, 
+    predefinedFields=ON, connectors=ON, adaptiveMeshConstraints=OFF)
+mdb.models['Model-1'].boundaryConditions['Left BC'].deactivate('Step-2')
+session.viewports['Viewport: 1'].assemblyDisplay.setValues(mesh=ON, loads=OFF, 
+    bcs=OFF, predefinedFields=OFF, connectors=OFF)
+session.viewports['Viewport: 1'].assemblyDisplay.meshOptions.setValues(
+    meshTechnique=ON)
+p = mdb.models['Model-1'].parts['Square plate']
+session.viewports['Viewport: 1'].setValues(displayedObject=p)
+session.viewports['Viewport: 1'].partDisplay.setValues(mesh=ON)
+session.viewports['Viewport: 1'].partDisplay.meshOptions.setValues(
+    meshTechnique=ON)
+session.viewports['Viewport: 1'].partDisplay.geometryOptions.setValues(
+    referenceRepresentation=OFF)
+p = mdb.models['Model-1'].parts['Square plate']
+f = p.faces
+pickedRegions = f.getSequenceFromMask(mask=('[#1 ]', ), )
+p.deleteMesh(regions=pickedRegions)
+p = mdb.models['Model-1'].parts['Square plate']
+e = p.edges
+pickedEdges = e.getSequenceFromMask(mask=('[#f ]', ), )
+p.seedEdgeByNumber(edges=pickedEdges, number=20, constraint=FINER)
+p = mdb.models['Model-1'].parts['Square plate']
+p.generateMesh()
+a = mdb.models['Model-1'].rootAssembly
+a.regenerate()
+a = mdb.models['Model-1'].rootAssembly
+session.viewports['Viewport: 1'].setValues(displayedObject=a)
+session.viewports['Viewport: 1'].assemblyDisplay.setValues(mesh=OFF)
+session.viewports['Viewport: 1'].assemblyDisplay.meshOptions.setValues(
+    meshTechnique=OFF)
+mdb.jobs['Square-mesh'].submit(consistencyChecking=OFF)
+#: The job input file "Square-mesh.inp" has been submitted for analysis.
+#: Job Square-mesh: Analysis Input File Processor completed successfully.
+#: Job Square-mesh: Abaqus/Explicit Packager completed successfully.
+#: Job Square-mesh: Abaqus/Explicit completed successfully.
+#: Job Square-mesh completed successfully. 
+o3 = session.openOdb(name='/home/hsharsh/fnm/mesh/Square-mesh.odb')
+#: Model: /home/hsharsh/fnm/mesh/Square-mesh.odb
+#: Number of Assemblies:         1
+#: Number of Assembly instances: 0
+#: Number of Part instances:     1
+#: Number of Meshes:             1
+#: Number of Element Sets:       3
+#: Number of Node Sets:          3
+#: Number of Steps:              2
+session.viewports['Viewport: 1'].setValues(displayedObject=o3)
+session.viewports['Viewport: 1'].odbDisplay.display.setValues(plotState=(
+    CONTOURS_ON_DEF, ))
+session.viewports[session.currentViewportName].odbDisplay.setFrame(
+    step='Step-2', frame=20)
+session.viewports['Viewport: 1'].odbDisplay.setPrimaryVariable(
+    variableLabel='U', outputPosition=NODAL, refinement=(INVARIANT, 
+    'Magnitude'), )
+session.viewports[session.currentViewportName].odbDisplay.setFrame(
+    step='Step-1', frame=0)
+session.viewports[session.currentViewportName].odbDisplay.setFrame(
+    step='Step-1', frame=14)
+session.viewports[session.currentViewportName].odbDisplay.setFrame(
+    step='Step-1', frame=8)
+Mdb()
+#: A new model database has been created.
+#: The model "Model-1" has been created.
+session.viewports['Viewport: 1'].setValues(displayedObject=None)
+session.viewports['Viewport: 1'].partDisplay.setValues(mesh=OFF)
+session.viewports['Viewport: 1'].partDisplay.meshOptions.setValues(
+    meshTechnique=OFF)
+session.viewports['Viewport: 1'].partDisplay.geometryOptions.setValues(
+    referenceRepresentation=ON)
+s = mdb.models['Model-1'].ConstrainedSketch(name='__profile__', sheetSize=10.0)
+#* IOError: /home/hsharsh/fnm/mesh/abaqus2.rec: Permission denied
+Mdb()
+#: A new model database has been created.
+#: The model "Model-1" has been created.
+session.viewports['Viewport: 1'].setValues(displayedObject=None)
+s = mdb.models['Model-1'].ConstrainedSketch(name='__profile__', sheetSize=10.0)
+#* IOError: /home/hsharsh/fnm/mesh/abaqus3.rec: Permission denied
