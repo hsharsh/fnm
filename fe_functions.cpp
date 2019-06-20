@@ -57,16 +57,16 @@ MatrixXd quad_ml(MatrixXd &xv, double &area, double rho){
   return ml;
 }
 
-void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXd &conn, double rho){
+void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXi &conn, double rho){
   double area = 0;
   long nelm = conn.rows();
   for(int i = 0; i < nelm; i++){
     if(true){ // Change this to reflect True for elements which don't have floating nodes activated
-      VectorXd nodes = conn(i,all);
+      VectorXi nodes = conn(i,all);
       MatrixXd xv = x(nodes,all);
       MatrixXd ml = quad_ml(xv,area,rho);
 
-      vector<double> dof = {nodes(0)*2, nodes(0)*2+1,
+      vector<int> dof = {   nodes(0)*2, nodes(0)*2+1,
                             nodes(1)*2, nodes(1)*2+1,
                             nodes(2)*2, nodes(2)*2+1,
                             nodes(3)*2, nodes(3)*2+1};
@@ -80,15 +80,15 @@ void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXd &conn, double rho){
   // cout << area << endl;
 }
 
-void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXd &conn, double E, double nu){
+void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, double E, double nu){
   double area = 0;
   long nelm = conn.rows();
   for(int i = 0; i < nelm; i++){
     if(true){ // Change this to reflect True for elements which don't have floating nodes activated
-      VectorXd nodes = conn(i,all);
+      VectorXi nodes = conn(i,all);
       MatrixXd xv = x(nodes,all);
       MatrixXd kl = quad_kl(xv,area,E,nu);
-      vector<double> dof = {nodes(0)*2, nodes(0)*2+1,
+      vector<int> dof = {   nodes(0)*2, nodes(0)*2+1,
                             nodes(1)*2, nodes(1)*2+1,
                             nodes(2)*2, nodes(2)*2+1,
                             nodes(3)*2, nodes(3)*2+1};
@@ -102,15 +102,15 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXd &conn, double
   }
 }
 
-void assemble_lcg(VectorXd &lcg, VectorXd &vn, MatrixXd &x, MatrixXd &conn, double eta){
+void assemble_lcg(VectorXd &lcg, VectorXd &vn, MatrixXd &x, MatrixXi &conn, double eta){
   double area = 0;
   long nelm = conn.rows();
   for(int i = 0; i < nelm; i++){
     if(true){ // Change this to reflect True for elements which don't have floating nodes activated
-      VectorXd nodes = conn(i,all);
+      VectorXi nodes = conn(i,all);
       MatrixXd xv = x(nodes,all);
       MatrixXd cl = (MatrixXd::Ones(4*2,4*2)).array()*eta;
-      vector<double> dof = {nodes(0)*2, nodes(0)*2+1,
+      vector<int> dof = {   nodes(0)*2, nodes(0)*2+1,
                             nodes(1)*2, nodes(1)*2+1,
                             nodes(2)*2, nodes(2)*2+1,
                             nodes(3)*2, nodes(3)*2+1};

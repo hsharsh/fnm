@@ -9,15 +9,15 @@
 
   vector<double> xgp = {-sqrt(3.0/5.0), 0, sqrt(3.0/5.0)};
   vector<double> wgp = {5.0/9.0, 8.0/9.0, 5.0/9.0};
-  long ngp = wgp.size();
+  int ngp = wgp.size();
 
   // Reading CSV files into an Eigen MatrixXd variable
-  template<typename M>
+  template<typename M, typename type>
   M load_csv (const string & path) {
       ifstream indata;
       indata.open(path);
       string line;
-      vector<double> values;
+      vector<type> values;
       uint rows = 0;  // Unsigned int variable used. Replace with long long in case of overflow because of larger files
       while (getline(indata, line)) {
           stringstream lineStream(line);
@@ -31,7 +31,28 @@
       return Map<const Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
   }
 
-  void vtkwrite(string filename, MatrixXd connectivity, MatrixXd position, MatrixXd u, MatrixXd v, MatrixXd a){
+  void print_vector(vector<vector<double> > v){
+    int ni = v.size(), nj = v[0].size();
+    cout << endl;
+    for (int i = 0; i < ni; i++){
+      for (int j = 0; j < nj; j++){
+        cout << v[i][j] << " ";
+      }
+      cout << endl;
+    }
+    cout << endl;
+  }
+
+  void print_vector(vector<double> v){
+    int ni = v.size();
+    cout << endl;
+    for (int i = 0; i < ni; i++){
+        cout << v[i] << " ";
+    }
+    cout << endl;
+  }
+
+  void vtkwrite(string filename, MatrixXi connectivity, MatrixXd position, MatrixXd u, MatrixXd v, MatrixXd a){
     string path = "/home/hsharsh/fnm/data/";
     path.append(filename);
     ofstream writer(path);
@@ -41,7 +62,7 @@
       writer << "VTK - Matlab export\n";
       writer << "ASCII\n";
 
-      long precision = 8;
+      int precision = 8;
 
       writer << "\nDATASET POLYDATA\n";
       writer << "POINTS " << position.rows() << " float\n";
