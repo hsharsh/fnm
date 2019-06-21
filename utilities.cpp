@@ -52,6 +52,14 @@
     cout << endl;
   }
 
+  void print_vector(vector<int> v){
+    int ni = v.size();
+    cout << endl;
+    for (int i = 0; i < ni; i++){
+        cout << v[i] << " ";
+    }
+    cout << endl;
+  }
   void vtkwrite(string filename, MatrixXi connectivity, MatrixXd position, MatrixXd u, MatrixXd v, MatrixXd a){
     string path = "/home/hsharsh/fnm/data/";
     path.append(filename);
