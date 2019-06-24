@@ -35,12 +35,26 @@ inline MatrixXd point_interpolation(VectorXd x1, VectorXd x2, double e){
   return xv;
 }
 
+inline double velocity_interpolation(double v1, double v2, double e){
+  return v1*(1-e) + v2*e;
+}
+
 inline double distance(VectorXd x1, VectorXd x2){
   return sqrt(pow(x1(0)-x2(0),2)+pow(x1(1)-x2(1),2));
 }
-void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, int &ndof){
+void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof){
   VectorXi nodes = conn(lmn,all);
   MatrixXd xv = x(nodes,all);
+  MatrixXd vx = un1(nodes.array()*2);
+  MatrixXd vy = un1(nodes.array()*2+1);
+
+  // cout << "vx" << endl;
+  // cout << vx << endl;
+  // cout << "vy" << endl;
+  // cout << vy << endl;
+  //     cout << "nodes" << endl;
+  // cout << nodes << endl;
+
   int nnod = ndof/2;
   int type = det_type(elem.edge);
   if (type == 1){
@@ -52,9 +66,17 @@ void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, int &ndof){
 
     x(nnod,all) = point_interpolation(xv(start,all),xv((start+1)%4,all),elem.edge[start]);
     x(nnod+1,all) = x(nnod,all);
+    un1(ndof) = velocity_interpolation(vx(start),vx((start+1)%4),elem.edge[start]);
+    un1(ndof+1) = velocity_interpolation(vy(start),vy((start+1)%4),elem.edge[start]);
+    un1(ndof+2) = un1(ndof);
+    un1(ndof+3) = un1(ndof+1);
 
     x(nnod+2,all) = point_interpolation(xv((start+3)%4,all),xv(start,all),elem.edge[(start+3)%4]);
     x(nnod+3,all) = x(nnod+2,all);
+    un1(ndof+4) = velocity_interpolation(vx((start+3)%4),vx(start),elem.edge[(start+3)%4]);
+    un1(ndof+5) = velocity_interpolation(vy((start+3)%4),vy(start),elem.edge[(start+3)%4]);
+    un1(ndof+6) = un1(ndof+4);
+    un1(ndof+7) = un1(nnod+5);
 
     elem.conn.push_back({nodes(start), nnod , nnod+3});
     elem.conn.push_back({nnod+1, nodes((start+1)%4), nodes((start+2)%4)});
@@ -72,9 +94,18 @@ void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, int &ndof){
     }
     x(nnod,all) = point_interpolation(xv((start+1)%4,all),xv((start+2)%4,all),elem.edge[(start+1)%4]);
     x(nnod+1,all) = x(nnod,all);
+    un1(ndof) = velocity_interpolation(vx((start+1)%4),vx((start+2)%4),elem.edge[(start+1)%4]);
+    un1(ndof+1) = velocity_interpolation(vy((start+1)%4),vy((start+2)%4),elem.edge[(start+1)%4]);
+    un1(ndof+2) = un1(ndof);
+    un1(ndof+3) = un1(ndof+1);
 
     x(nnod+2,all) = point_interpolation(xv((start+3)%4,all),xv(start,all),elem.edge[(start+3)%4]);
     x(nnod+3,all) = x(nnod+2,all);
+    un1(ndof+4) = velocity_interpolation(vx((start+3)%4),vx(start),elem.edge[(start+3)%4]);
+    un1(ndof+5) = velocity_interpolation(vy((start+3)%4),vy(start),elem.edge[(start+3)%4]);
+    un1(ndof+6) = un1(ndof+4);
+    un1(ndof+7) = un1(nnod+5);
+
     if(distance(xv(start,all),x(nnod,all)) < distance(x(nnod+3,all),xv((start+1)%4,all))){
       elem.conn.push_back({nodes(start), nodes((start+1)%4), nnod});
       elem.conn.push_back({nnod, nnod+3, nodes(start)});
@@ -102,12 +133,12 @@ void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, int &ndof){
 }
 
 
-void floating_nodes(vector<int> &discont, map <int,element> &fn_elements, MatrixXi &conn, MatrixXd &x, int &ndof){
+void floating_nodes(vector<int> &discont, map <int,element> &fn_elements, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof){
 
   int nelm = conn.rows();
   for (int i = 0; i < nelm; i++){
     if(discont[i]==1){
-      partition(fn_elements[i], i, conn, x, ndof);
+      partition(fn_elements[i], i, conn, x, un1, ndof);
       discont[i]=2;
     }
   }

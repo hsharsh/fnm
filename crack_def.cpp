@@ -2,7 +2,7 @@
 
 void crack_def(vector<int> &discont, map<int,element> &fn_elements){
   vector <int> cracked;
-  for (int i = 2; i < 9; i+=3){
+  for (int i = 21; i <= 144; i+=41){
     cracked.push_back(i-1);
   }
   for (int i = 0; i < cracked.size(); i++){

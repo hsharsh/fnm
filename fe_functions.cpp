@@ -3,7 +3,7 @@
 MatrixXd tri_kl(MatrixXd &xv, double &area, double E, double nu){
   MatrixXd kl = MatrixXd::Zero(3*2,3*2);
   double area_elem = 0.5*(xv(0,0)*xv(1,1)-xv(1,0)*xv(0,1) + xv(1,0)*xv(2,1)-xv(2,0)*xv(1,1) + xv(2,0)*xv(0,1)-xv(0,0)*xv(2,1));
-  MatrixXd B0(2,3), B2(4,6), B1(3,4);
+  MatrixXd B0(2,3), B2 = MatrixXd::Zero(4,6), B1(3,4);
   B0 << xv(1,1)-xv(2,1), xv(2,1)-xv(0,1), xv(0,1)-xv(1,1),
           xv(2,0)-xv(1,0), xv(0,0)-xv(2,0), xv(1,0)-xv(0,0);
   B0 = B0.array()/(2*area_elem);
@@ -35,7 +35,7 @@ MatrixXd quad_kl(MatrixXd &xv, double &area, double E, double nu){
   for(int i = 0; i < ngp; i++){
     for(int j = 0; j < ngp; j++){
         double r = xgp[i], s = xgp[j];
-        MatrixXd B0(2,4), jac(2,2), B1(3,4), B2(4,4), B3(4,8);
+        MatrixXd B0(2,4), jac(2,2), B1(3,4), B2 = MatrixXd::Zero(4,4), B3 = MatrixXd::Zero(4,8);
 
         B0 << -(1-s)/4,  (1-s)/4, (1+s)/4, -(1+s)/4,
               -(1-r)/4,  -(1+r)/4,  (1+r)/4,  (1-r)/4;
@@ -127,7 +127,7 @@ void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXi &conn, vector<int> &discont
         vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
                             nodes[1]*2, nodes[1]*2+1,
                             nodes[2]*2, nodes[2]*2+1};
-                            
+
         mg(dof) = mg(dof) + ml.diagonal();
       }
     }
@@ -153,9 +153,13 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector
       fi(dof) = fi(dof) + (kl*u);
     }
     else{
+
       vector<vector<int> > lconn = fn_elements[i].conn;
+      // cout << "lconn" << endl;
+      // print_vector(lconn);
+      // cout << endl;
       for (int j = 0; j < lconn.size(); j++){
-        VectorXi nodes = conn(i,all);
+        vector<int> nodes = lconn[j];
         MatrixXd xv = x(nodes,all);
         MatrixXd kl = tri_kl(xv,area,E,nu);
 
@@ -163,6 +167,11 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector
                             nodes[1]*2, nodes[1]*2+1,
                             nodes[2]*2, nodes[2]*2+1};
         VectorXd u = un(dof);
+        // cout << endl;
+        // cout << "xv" << endl;
+        // cout << xv << endl;
+        // cout << "kl" << endl;
+        // cout << kl << endl;
         fi(dof) = fi(dof) + (kl*u);
       }
     }

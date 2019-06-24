@@ -32,19 +32,18 @@ int main(int argc, char* argv[]){
   vector<int> discont(nnod,0);
   map <int,element> fn_elements;
 
-  boundary_conditions(vn, vn1);
+  // boundary_conditions(vn, vn1);
 
   double t = 0, n = 1, nf = 1;
   while(t <= tmax){
     cout << "Time: " << t << endl;
 
-    // VectorXd mg = VectorXd::Zero(ndof);
-    VectorXd mg = VectorXd::Ones(ndof);
+    VectorXd mg = VectorXd::Zero(ndof);
     VectorXd fi = VectorXd::Zero(ndof);
     VectorXd fg = VectorXd::Zero(ndof);
     VectorXd lcg = VectorXd::Zero(ndof);
 
-    // // Linearized Global Stiffness matrix assembly
+    // Linearized Global Stiffness matrix assembly
     assemble_fi(fi, un, x, conn, discont, fn_elements, E, nu);
     //
     // // Linearized Global damping matrix
@@ -53,26 +52,40 @@ int main(int argc, char* argv[]){
     // // Linearized Global Mass matrix assembly
     assemble_mg(mg, x, conn, discont, fn_elements, rho);
 
-    boundary_conditions(vn,vn1);
+    // boundary_conditions(vn,vn1);
 
+    // cout << "ndof: " << ndof << endl;
+    //
     // cout << "fi" << endl;
-    // cout << fi.head(15) << endl << endl;
+    // cout << fi << endl << endl;
     //
     // cout << "mg" << endl;
-    // cout << mg.head(15) << endl << endl;
+    // cout << mg << endl << endl;
     // Solver
 
     an1(seq(0,ndof-1)) = mg.array().inverse()*(fg-fi-lcg).array();
     vn1 = vn + an1*dt;
 
-    boundary_conditions(vn,vn1);
-    // if(t < 4.0){
-    //   temporary_bc(vn,vn1);
-    // }
+    // boundary_conditions(vn,vn1);
+    if(t < 4.0){
+      temporary_bc(vn,vn1);
+    }
 
     un1 = un + vn1*dt;
 
+    // Define crack
+    if(abs(t-14.0) < 1e-5){
+      cout << "Crack added" << endl;
+      crack_def(discont,fn_elements);
+    }
+
+    // Add floating nodes to the global matrices
+    floating_nodes(discont, fn_elements, conn, x, un1, ndof);
+
     // File writing operations
+    vector<vector<int> > fl_conn;
+    MatrixXd conn_w;
+    long s = 0;
     if(n >= nf){
       MatrixXd xdef = MatrixXd::Zero(ndof/2,3);
 
@@ -84,22 +97,29 @@ int main(int argc, char* argv[]){
       v(all,0) = vn1(seq(0,ndof-1,2));    v(all,1) = vn1(seq(1,ndof-1,2));
       a(all,0) = an1(seq(0,ndof-1,2));    a(all,1) = an1(seq(1,ndof-1,2));
 
+      for (int i = 0; i < nelm; i++){
+        if(discont[i]){
+          for(int j = 0; j < fn_elements[i].conn.size(); j++){
+            fl_conn.push_back(fn_elements[i].conn[j]);
+            s+=3;
+          }
 
+        }
+        else{
+          vector<int> elem_conn(conn.cols());
+          for(int j = 0; j < conn.cols(); j++){
+            elem_conn[j] = conn(i,j);
+          }
+          fl_conn.push_back(elem_conn);
+          s+=4;
+        }
+      }
       string filename = "x0";   filename.append(to_string((int)(t*1e5)));   filename.append(".vtk");
-      vtkwrite(filename,conn,xdef,u,v,a);
+      vtkwrite(filename,fl_conn,s,xdef,u,v,a);
       n = 1;
     }
     else
       n++;
-
-    // Define crack
-    if(t == 0.1){
-      cout << "Crack added" << endl;
-      crack_def(discont,fn_elements);
-    }
-
-    // Add floating nodes to the global matrices
-    floating_nodes(discont, fn_elements, conn, x, ndof);
 
     t = t+dt;
     un = un1;
