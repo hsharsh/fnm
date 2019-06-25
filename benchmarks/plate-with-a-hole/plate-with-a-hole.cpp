@@ -10,7 +10,7 @@ void boundary_conditions(VectorXd &vn, VectorXd &vn1){
 356, 357, 358, 359, 360, 361;
   bottom = bottom.array()-1;
   bc = -0.01;
-  for(int i=0; i < bottom.size();i++){
+  for(int i=0; i < bottom.size();++i){
     long node_bc = bottom(i);
     long idof = node_bc*2+1;
     vn(idof) = bc;
@@ -23,7 +23,7 @@ void boundary_conditions(VectorXd &vn, VectorXd &vn1){
  538, 539, 540, 541, 542, 543;
   top = top.array()-1;
   bc = 0.01;
-  for(int i=0; i < top.size();i++){
+  for(int i=0; i < top.size();++i){
     long node_bc = top(i);
     long idof = node_bc*2+1;
     vn(idof) = bc;

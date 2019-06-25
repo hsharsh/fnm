@@ -3,14 +3,15 @@
 struct element{
   vector<double> edge = {NAN,NAN,NAN,NAN};
   vector<vector<int> > conn;
+  bool processed = 0;
   vector<bool> active;
 };
 
 inline int count_nan(vector<double> input){
   int count = 0;
-  for(int i = 0; i < input.size(); i++){
+  for(int i = 0; i < input.size(); ++i){
     if (isnan(input[i]))
-      count++;
+      ++count;
   }
   return count;
 }
@@ -59,7 +60,7 @@ void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, VectorXd &un
   int type = det_type(elem.edge);
   if (type == 1){
     int start = 0;
-    for(start = 1; start < 4; start++){
+    for(start = 1; start < 4; ++start){
       if(!isnan(elem.edge[start-1]) && !isnan(elem.edge[start]))
         break;
     }
@@ -136,10 +137,27 @@ void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, VectorXd &un
 void floating_nodes(vector<int> &discont, map <int,element> &fn_elements, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof){
 
   int nelm = conn.rows();
-  for (int i = 0; i < nelm; i++){
+  for (int i = 0; i < nelm; ++i){
     if(discont[i]==1){
       partition(fn_elements[i], i, conn, x, un1, ndof);
       discont[i]=2;
+    }
+  }
+}
+
+void remove_singular_elements(map <int,element> &fn_elements, MatrixXd &x){
+  for(map<int,element>::iterator it = fn_elements.begin(); it!=fn_elements.end(); ++it){
+    if(!it->second.processed){
+      vector<vector<int> > lconn = it->second.conn;
+      for (int j = 0; j < lconn.size(); ++j){
+        vector<int> nodes = lconn[j];
+        MatrixXd xv = x(nodes,all);
+        double area_elem = 0.5*(xv(0,0)*xv(1,1)-xv(1,0)*xv(0,1) + xv(1,0)*xv(2,1)-xv(2,0)*xv(1,1) + xv(2,0)*xv(0,1)-xv(0,0)*xv(2,1));
+        if(area_elem < active_tol){
+          it->second.active[j] = 0;
+        }
+      }
+      it->second.processed = 1;
     }
   }
 }

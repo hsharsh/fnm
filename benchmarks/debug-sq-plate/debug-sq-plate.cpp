@@ -7,7 +7,7 @@ void boundary_conditions(VectorXd &vn, VectorXd &vn1){
   VectorXi left = VectorXi::LinSpaced(4,1,13);
   left = left.array()-1;
   bc = -0.01;
-  for(int i=0; i < left.size();i++){
+  for(int i=0; i < left.size();++i){
     long node_bc = left(i);
     long idof = node_bc*2;
     vn(idof) = bc;
@@ -17,7 +17,7 @@ void boundary_conditions(VectorXd &vn, VectorXd &vn1){
   VectorXi right = VectorXi::LinSpaced(4,4,16);
   right = right.array()-1;
   bc = 0.01;
-  for(int i=0; i < right.size();i++){
+  for(int i=0; i < right.size();++i){
     long node_bc = right(i);
     long idof = node_bc*2;
     vn(idof) = bc;
@@ -30,7 +30,7 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements){
   for (int i = 2; i < 9; i+=3){
     cracked.push_back(i-1);
   }
-  for (int i = 0; i < cracked.size(); i++){
+  for (int i = 0; i < cracked.size(); ++i){
     discont[cracked[i]] = 1;
     fn_elements[cracked[i]].edge = {0.5, NAN, 0.5, NAN};
   }
