@@ -7,10 +7,14 @@
   using namespace Eigen;
   using namespace std;
 
+  #define pi 			3.141592653593
+  #define eps 		0.0000001
+
   vector<double> xgp = {-sqrt(3.0/5.0), 0, sqrt(3.0/5.0)};
   vector<double> wgp = {5.0/9.0, 8.0/9.0, 5.0/9.0};
   int ngp = wgp.size();
   double active_tol = 1e-3;
+  double sy = 1e-5;
 
   // Reading CSV files into an Eigen MatrixXd variable
   template<typename M, typename type>

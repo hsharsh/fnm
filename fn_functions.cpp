@@ -26,6 +26,7 @@ inline int det_type(vector<double> edge){
   }
   else{
     // Code for T-crack and intersecting cracks
+    cout << "Error determining type. Check for inconsistent assignment of edge variables" << endl;
   }
   return type;
 }

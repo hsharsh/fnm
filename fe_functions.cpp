@@ -31,7 +31,7 @@ void compute_properties(VectorXd &stress, vector<int> &discont, map <int,element
 
         B1 << 1, 0, 0, 0,
               0, 0, 0, 1,
-              0, 1, 1, 0;
+              0, 0.5, 0.5, 0;
 
         B2(seq(0,1),seq(0,1)) = jac.inverse();
         B2(seq(2,3),seq(2,3)) = jac.inverse();
@@ -46,7 +46,7 @@ void compute_properties(VectorXd &stress, vector<int> &discont, map <int,element
         MatrixXd D(3,3);
         D << 1-nu, 0, 0,
               0, 1-nu, 0,
-              0, 0, (1-2*nu)/2;
+              0, 0, (1-2*nu);
         D = E/((1+nu)*(1-2*nu))*D.array();
 
         VectorXd str = D*strain;
@@ -74,7 +74,7 @@ void compute_properties(VectorXd &stress, vector<int> &discont, map <int,element
 
           B1 << 1, 0, 0, 0,
                 0, 0, 0, 1,
-                0, 1, 1, 0;
+                0, 0.5, 0.5, 0;
 
           B2(seq(0,1),seq(0,last,2)) = B0;
           B2(seq(2,3),seq(1,last,2)) = B0;
@@ -85,7 +85,7 @@ void compute_properties(VectorXd &stress, vector<int> &discont, map <int,element
           MatrixXd D(3,3);
           D << 1-nu, 0, 0,
                 0, 1-nu, 0,
-                0, 0, (1-2*nu)/2;
+                0, 0, (1-2*nu);
           D = E/((1+nu)*(1-2*nu))*D.array();
           MatrixXd str = D*strain;
           double str_mises = sqrt((pow(str(0)-str(1),2) + pow(str(0),2) + pow(str(1),2) + 6*(pow(str(2),2)))/2);
@@ -113,7 +113,7 @@ MatrixXd tri_kl(MatrixXd &xv, double &area, double E, double nu){
 
   B1 << 1, 0, 0, 0,
         0, 0, 0, 1,
-        0, 1, 1, 0;
+        0, 0.5, 0.5, 0;
 
   B2(seq(0,1),seq(0,last,2)) = B0;
   B2(seq(2,3),seq(1,last,2)) = B0;
@@ -123,7 +123,7 @@ MatrixXd tri_kl(MatrixXd &xv, double &area, double E, double nu){
   MatrixXd D(3,3);
   D << 1-nu, 0, 0,
         0, 1-nu, 0,
-        0, 0, (1-2*nu)/2;
+        0, 0, (1-2*nu);
   D = E/((1+nu)*(1-2*nu))*D.array();
 
   kl = kl + B.transpose()*D*B*area_elem;
@@ -147,7 +147,7 @@ MatrixXd quad_kl(MatrixXd &xv, double &area, double E, double nu){
 
         B1 << 1, 0, 0, 0,
               0, 0, 0, 1,
-              0, 1, 1, 0;
+              0, 0.5, 0.5, 0;
 
         B2(seq(0,1),seq(0,1)) = jac.inverse();
         B2(seq(2,3),seq(2,3)) = jac.inverse();
@@ -161,7 +161,7 @@ MatrixXd quad_kl(MatrixXd &xv, double &area, double E, double nu){
         MatrixXd D(3,3);
         D << 1-nu, 0, 0,
               0, 1-nu, 0,
-              0, 0, (1-2*nu)/2;
+              0, 0, (1-2*nu);
         D = E/((1+nu)*(1-2*nu))*D.array();
 
         kl = kl + B.transpose()*D*B*jac.determinant() * wgp[i] * wgp[j];

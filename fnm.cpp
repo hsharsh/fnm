@@ -13,6 +13,12 @@ int main(int argc, char* argv[]){
     dt = atof(argv[1]);
     tmax = atof(argv[2]);
   }
+  else if(argc == 4){
+    dt = atof(argv[1]);
+    tmax = atof(argv[2]);
+    sy = atof(argv[3]);
+  }
+
   MatrixXi elements = load_csv<MatrixXi,int>("/home/hsharsh/fnm/elements.inp");
   MatrixXd nodes = load_csv<MatrixXd,double>("/home/hsharsh/fnm/nodes.inp");
 
@@ -34,7 +40,7 @@ int main(int argc, char* argv[]){
   vector<int> discont(nnod,0);
   map <int,element> fn_elements;
 
-  // boundary_conditions(vn, vn1);
+  boundary_conditions(vn, vn1);
 
   double t = 0, n = 1, nf = 1;
   while(t <= tmax){
@@ -54,24 +60,27 @@ int main(int argc, char* argv[]){
     // Linearized Global Mass matrix assembly
     assemble_mg(mg, x, conn, discont, fn_elements, rho, ndof);
 
-    // boundary_conditions(vn,vn1);
+    boundary_conditions(vn,vn1);
 
     // Solver
     an1(seq(0,ndof-1)) = mg.array().inverse()*(fg-fi-lcg).array();
     vn1 = vn + an1*dt;
 
-    // boundary_conditions(vn,vn1);
-    if(t < 4.0){
-      temporary_bc(vn,vn1);
-    }
+    boundary_conditions(vn,vn1);
+
+    // if(t < 4.0){
+    //   temporary_bc(vn,vn1);
+    // }
 
     un1 = un + vn1*dt;
 
     // Define crack
-    if(abs(t-14.0) < 1e-5){
+    if(abs(t-4.0) < 1e-5){
       cout << "Crack added" << endl;
       crack_def(discont,fn_elements);
     }
+
+    stress_based_crack(discont, fn_elements, conn, x, un1, ndof, E, nu);
 
     // Add floating nodes to the global matrices
     floating_nodes(discont, fn_elements, conn, x, un1, ndof);
