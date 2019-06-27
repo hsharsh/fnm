@@ -1,14 +1,25 @@
 #include "utilities.cpp"
 
+// Don't forget to make dicsont corresponding to the element as "1" to activate the floating nodes.
 void crack_def(vector<int> &discont, map<int,element> &fn_elements){
-  vector <int> cracked;
-  for (int i = 2; i < 9; i+=3){
-    cracked.push_back(i-1);
-  }
-  for (int i = 0; i < cracked.size(); ++i){
-    discont[cracked[i]] = 1;
-    fn_elements[cracked[i]].edge = {0.5, NAN, 0.5, NAN};
-  }
+  // vector <int> cracked;
+  // for (int i = 2; i < 9; i+=3){
+  //   cracked.push_back(i-1);
+  // }
+  // for (int i = 0; i < cracked.size(); ++i){
+  //   discont[cracked[i]] = 1;
+  //   fn_elements[cracked[i]].edge = {0.5, NAN, 0.5, NAN};
+  // }
+  discont[1] = 1;
+  discont[2] = 1;
+  discont[5] = 1;
+  discont[8] = 1;
+  discont[7] = 1;
+  fn_elements[1].edge = {0.5, 0.5, NAN, NAN};
+  fn_elements[2].edge = {NAN, NAN, 0.5, 0.5};
+  fn_elements[5].edge = {0.5, NAN, 0.5, NAN};
+  fn_elements[8].edge = {0.5, NAN, NAN, 0.5};
+  fn_elements[7].edge = {NAN, 0.5, 0.5, NAN};
 }
 
 void stress_based_crack(vector<int> &discont, map <int,element> &fn_elements, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof, double E, double nu){

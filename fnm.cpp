@@ -81,7 +81,7 @@ int main(int argc, char* argv[]){
     // boundary_conditions(un,un1,vn,vn1,fg);
 
     // Define crack
-    if(abs(t-5.0) < 1e-5){
+    if(abs(t-0.5) < 1e-5){
       cout << "Crack added" << endl;
       crack_def(discont,fn_elements);
     }

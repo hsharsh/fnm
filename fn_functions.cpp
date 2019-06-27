@@ -60,14 +60,16 @@ void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, VectorXd &un
   int nnod = ndof/2;
   int type = det_type(elem.edge);
   if (type == 1){
-    int start = 0;
-    for(start = 1; start < 4; ++start){
-      if(!isnan(elem.edge[start-1]) && !isnan(elem.edge[start]))
+    int start = -1;
+    for(start = 0; start < 4; ++start){
+      if(!isnan(elem.edge[start]) && !isnan(elem.edge[(start+1)%4]))
         break;
     }
+    start = (start+1)%4;
 
     x(nnod,all) = point_interpolation(xv(start,all),xv((start+1)%4,all),elem.edge[start]);
     x(nnod+1,all) = x(nnod,all);
+    cout << x(nnod,all) << endl;
     un1(ndof) = velocity_interpolation(vx(start),vx((start+1)%4),elem.edge[start]);
     un1(ndof+1) = velocity_interpolation(vy(start),vy((start+1)%4),elem.edge[start]);
     un1(ndof+2) = un1(ndof);
@@ -75,6 +77,7 @@ void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, VectorXd &un
 
     x(nnod+2,all) = point_interpolation(xv((start+3)%4,all),xv(start,all),elem.edge[(start+3)%4]);
     x(nnod+3,all) = x(nnod+2,all);
+
     un1(ndof+4) = velocity_interpolation(vx((start+3)%4),vx(start),elem.edge[(start+3)%4]);
     un1(ndof+5) = velocity_interpolation(vy((start+3)%4),vy(start),elem.edge[(start+3)%4]);
     un1(ndof+6) = un1(ndof+4);
@@ -82,7 +85,7 @@ void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, VectorXd &un
 
     elem.conn.push_back({nodes(start), nnod , nnod+3});
     elem.conn.push_back({nnod+1, nodes((start+1)%4), nodes((start+2)%4)});
-    elem.conn.push_back({nnod+1, nodes((start+2)%4), nnod+3});
+    elem.conn.push_back({nnod+1, nodes((start+2)%4), nnod+2});
     elem.conn.push_back({nnod+2, nodes((start+2)%4), nodes((start+3)%4)});
 
     elem.active = {1,1,1,1};
