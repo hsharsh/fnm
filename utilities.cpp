@@ -76,7 +76,7 @@
     }
     cout << endl;
   }
-  void vtkwrite(string filename, vector<vector<int> > fl_connectivity, long s, MatrixXd position, MatrixXd u, MatrixXd v, MatrixXd a, VectorXd stress){
+  void vtkwrite(string filename, vector<vector<int> > fl_connectivity, long s, MatrixXd position, MatrixXd u, MatrixXd v, MatrixXd a, VectorXd stress, MatrixXd fi){
     string path = "/home/hsharsh/fnm/data/";
     path.append(filename);
     ofstream writer(path);
@@ -117,6 +117,10 @@
       writer << "\nVECTORS acceleration float\n";
       for(int i = 0; i < a.rows();++i)
         writer << a(i,all) << "\n";
+
+      writer << "\nVECTORS reaction float\n";
+      for(int i = 0; i < fi.rows();++i)
+        writer << fi(i,all) << "\n";
 
       writer << "SCALARS stress float\n";
       writer << "LOOKUP_TABLE deafult\n";

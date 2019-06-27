@@ -40,7 +40,8 @@ int main(int argc, char* argv[]){
   vector<int> discont(nnod,0);
   map <int,element> fn_elements;
 
-  boundary_conditions(vn, vn1);
+  // boundary_conditions(vn,vn1);
+  // boundary_conditions(un,un1,vn,vn1);
 
   double t = 0, n = 1, nf = 1;
   while(t <= tmax){
@@ -51,6 +52,7 @@ int main(int argc, char* argv[]){
     VectorXd fg = VectorXd::Zero(ndof);
     VectorXd lcg = VectorXd::Zero(ndof);
 
+
     // Linearized Global Stiffness matrix assembly
     assemble_fi(fi, un, x, conn, discont, fn_elements, E, nu);
 
@@ -60,13 +62,14 @@ int main(int argc, char* argv[]){
     // Linearized Global Mass matrix assembly
     assemble_mg(mg, x, conn, discont, fn_elements, rho, ndof);
 
-    boundary_conditions(vn,vn1);
-
+    // BC for fg
+    boundary_conditions(un,un1,vn,vn1,fg);
     // Solver
     an1(seq(0,ndof-1)) = mg.array().inverse()*(fg-fi-lcg).array();
     vn1 = vn + an1*dt;
 
-    boundary_conditions(vn,vn1);
+    // BC for velocity
+    boundary_conditions(un,un1,vn,vn1,fg);
 
     // if(t < 4.0){
     //   temporary_bc(vn,vn1);
@@ -74,13 +77,16 @@ int main(int argc, char* argv[]){
 
     un1 = un + vn1*dt;
 
+    // BC for displacement
+    // boundary_conditions(un,un1,vn,vn1,fg);
+
     // Define crack
-    if(abs(t-4.0) < 1e-5){
+    if(abs(t-5.0) < 1e-5){
       cout << "Crack added" << endl;
       crack_def(discont,fn_elements);
     }
 
-    stress_based_crack(discont, fn_elements, conn, x, un1, ndof, E, nu);
+    // stress_based_crack(discont, fn_elements, conn, x, un1, ndof, E, nu);
 
     // Add floating nodes to the global matrices
     floating_nodes(discont, fn_elements, conn, x, un1, ndof);
@@ -98,7 +104,7 @@ int main(int argc, char* argv[]){
     if(n >= nf){
       MatrixXd xdef = MatrixXd::Zero(ndof/2,3);
 
-      MatrixXd u = MatrixXd::Zero(ndof/2,3), v = MatrixXd::Zero(ndof/2,3), a = MatrixXd::Zero(ndof/2,3);
+      MatrixXd u = MatrixXd::Zero(ndof/2,3), v = MatrixXd::Zero(ndof/2,3), a = MatrixXd::Zero(ndof/2,3), f = MatrixXd::Zero(ndof/2,3);
 
       VectorXd str = stress(seq(0,(ndof/2)-1));
 
@@ -108,6 +114,7 @@ int main(int argc, char* argv[]){
       u(all,0) = un1(seq(0,ndof-1,2));    u(all,1) = un1(seq(1,ndof-1,2));
       v(all,0) = vn1(seq(0,ndof-1,2));    v(all,1) = vn1(seq(1,ndof-1,2));
       a(all,0) = an1(seq(0,ndof-1,2));    a(all,1) = an1(seq(1,ndof-1,2));
+      f(all,0) = fi(seq(0,ndof-1,2));     f(all,1) = fi(seq(1,ndof-1,2));
 
       for (int i = 0; i < nelm; ++i){
         if(discont[i]){
@@ -130,7 +137,7 @@ int main(int argc, char* argv[]){
         }
       }
       string filename = "x0";   filename.append(to_string((int)(t*1e5)));   filename.append(".vtk");
-      vtkwrite(filename,fl_conn,s,xdef,u,v,a,str);
+      vtkwrite(filename,fl_conn,s,xdef,u,v,a,str,f);
       n = 1;
     }
     else

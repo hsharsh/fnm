@@ -2,7 +2,7 @@
 
 void crack_def(vector<int> &discont, map<int,element> &fn_elements){
   vector <int> cracked;
-  for (int i = 2; i <= 2; ++i){
+  for (int i = 2; i < 9; i+=3){
     cracked.push_back(i-1);
   }
   for (int i = 0; i < cracked.size(); ++i){
@@ -82,40 +82,25 @@ void stress_based_crack(vector<int> &discont, map <int,element> &fn_elements, Ma
         else
           direction = es.eigenvectors().col(1);
 
-
-          double r = 0, s = 0;
-          MatrixXd B0(2,4);
-
-          B0 << -(1-s)/4,  (1-s)/4, (1+s)/4, -(1+s)/4,
-                -(1-r)/4,  -(1+r)/4,  (1+r)/4,  (1-r)/4;
-          cout << xv << endl << endl;
-          cout << (B0*xv) << endl << endl;
         MatrixXd T(2,2);
         T <<  cos(pi/2), -sin(pi/2),
               sin(pi/2), cos(pi/2);
 
         direction = T*direction;
 
-        double mr = direction(0), ms = direction(1);
+        double dx = direction(0), dy = direction(1);
+
         element fn;
-        if (abs(ms) < eps){
-          fn.edge = {0.5, NAN, 0.5, NAN};
+
+        double cx = (xv(0,0)+xv(1,0)+xv(2,0)+xv(3,0))/4, cy = (xv(0,1)+xv(1,1)+xv(2,1)+xv(3,1))/4;
+        for (int j = 0; j < 4; j++){
+          fn.edge[j] = (dx*(cy-xv(j,1))-dy*(cx-xv(j,0)))/(dx*(xv((j+1)%4,1)-xv(j,1))-dy*(xv((j+1)%4,0)-xv(j,0)));
+          cout << fn.edge[j] << endl;
+          if(fn.edge[j] > 1.0 || fn.edge[j] < 0.0){
+            fn.edge[j] = NAN;
+          }
         }
-        else{
-          double m = mr/ms;
-          // cout << m << endl;
-          if (-1.0 <= (1.0/m) && (1.0/m) <= 1.0)
-            fn.edge[0] = (m-1.0)/(2.0*m);
 
-          if (-1.0 <= -m && -m <= 1.0)
-            fn.edge[1] = (m+1.0)/2.0;
-
-          if (-1.0 <= -(1.0/m) && -(1.0/m) <= 1.0)
-            fn.edge[2] = (m-1.0)/(2.0*m);
-
-          if (-1.0 <= m && m <= 1.0)
-            fn.edge[3] = (m+1.0)/2.0;
-        }
         discont[i] = 1;
         fn_elements[i] = fn;
       }
