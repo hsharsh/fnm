@@ -13,7 +13,7 @@
   vector<double> xgp = {-sqrt(3.0/5.0), 0, sqrt(3.0/5.0)};
   vector<double> wgp = {5.0/9.0, 8.0/9.0, 5.0/9.0};
   int ngp = wgp.size();
-  double active_tol = 1e-3;
+  double active_tol = 1e-4; // Should be 1e-5 for the plate with a hole
   double sy = 1e-5;
 
   // Reading CSV files into an Eigen MatrixXd variable

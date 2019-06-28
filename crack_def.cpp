@@ -2,24 +2,14 @@
 
 // Don't forget to make dicsont corresponding to the element as "1" to activate the floating nodes.
 void crack_def(vector<int> &discont, map<int,element> &fn_elements){
-  // vector <int> cracked;
-  // for (int i = 2; i < 9; i+=3){
-  //   cracked.push_back(i-1);
-  // }
-  // for (int i = 0; i < cracked.size(); ++i){
-  //   discont[cracked[i]] = 1;
-  //   fn_elements[cracked[i]].edge = {0.5, NAN, 0.5, NAN};
-  // }
-  discont[1] = 1;
-  discont[2] = 1;
-  discont[5] = 1;
-  discont[8] = 1;
-  discont[7] = 1;
-  fn_elements[1].edge = {0.5, 0.5, NAN, NAN};
-  fn_elements[2].edge = {NAN, NAN, 0.5, 0.5};
-  fn_elements[5].edge = {0.5, NAN, 0.5, NAN};
-  fn_elements[8].edge = {0.5, NAN, NAN, 0.5};
-  fn_elements[7].edge = {NAN, 0.5, 0.5, NAN};
+  vector <int> cracked;
+  for (int i = 2; i < 9; i+=3){
+    cracked.push_back(i-1);
+  }
+  for (int i = 0; i < cracked.size(); ++i){
+    discont[cracked[i]] = 1;
+    fn_elements[cracked[i]].edge = {0.5, NAN, 0.5, NAN};
+  }
 }
 
 void stress_based_crack(vector<int> &discont, map <int,element> &fn_elements, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof, double E, double nu){
@@ -73,19 +63,20 @@ void stress_based_crack(vector<int> &discont, map <int,element> &fn_elements, Ma
                 0, 0, (1-2*nu);
           D = E/((1+nu)*(1-2*nu))*D.array();
 
-          str = str.array() + (D*strain).array()*wgp[i]*wgp[j];
-          area_elem += jac.determinant()*wgp[i]*wgp[j];
+          str = str.array() + (D*strain).array()*wgp[j]*wgp[k];
+          area_elem += jac.determinant()*wgp[j]*wgp[k];
         }
       }
 
       double stress = sqrt((pow(str(0)-str(1),2) + pow(str(0),2) + pow(str(1),2) + 6*(pow(str(2),2)))/2)/area_elem;
 
-      if(max(str(0),str(1)) > sy){
-        MatrixXd sig(2,2);
-        sig << str(0), str(2),
-                str(2), str(1);
-        SelfAdjointEigenSolver<MatrixXd> es(sig);
-        VectorXd eig_values = es.eigenvalues();
+      MatrixXd sig(2,2);
+      sig << str(0), str(2),
+              str(2), str(1);
+      SelfAdjointEigenSolver<MatrixXd> es(sig);
+      VectorXd eig_values = es.eigenvalues();
+
+      if(max(eig_values(0),eig_values(1)) > sy){
         VectorXd direction = VectorXd::Zero(2);
 
         if(eig_values(0) > eig_values(1))
@@ -106,12 +97,11 @@ void stress_based_crack(vector<int> &discont, map <int,element> &fn_elements, Ma
         double cx = (xv(0,0)+xv(1,0)+xv(2,0)+xv(3,0))/4, cy = (xv(0,1)+xv(1,1)+xv(2,1)+xv(3,1))/4;
         for (int j = 0; j < 4; j++){
           fn.edge[j] = (dx*(cy-xv(j,1))-dy*(cx-xv(j,0)))/(dx*(xv((j+1)%4,1)-xv(j,1))-dy*(xv((j+1)%4,0)-xv(j,0)));
-          cout << fn.edge[j] << endl;
           if(fn.edge[j] > 1.0 || fn.edge[j] < 0.0){
             fn.edge[j] = NAN;
           }
         }
-
+        cout << "Crack added at element " << i << endl;
         discont[i] = 1;
         fn_elements[i] = fn;
       }

@@ -36,7 +36,6 @@ void compute_properties(VectorXd &stress, vector<int> &discont, map <int,element
         B2(seq(0,1),seq(0,1)) = jac.inverse();
         B2(seq(2,3),seq(2,3)) = jac.inverse();
 
-        // Define B3
         B3(seq(0,1),seq(0,last,2)) = B0;
         B3(seq(2,3),seq(1,last,2)) = B0;
 
@@ -152,7 +151,6 @@ MatrixXd quad_kl(MatrixXd &xv, double &area, double E, double nu){
         B2(seq(0,1),seq(0,1)) = jac.inverse();
         B2(seq(2,3),seq(2,3)) = jac.inverse();
 
-        // Define B3
         B3(seq(0,1),seq(0,last,2)) = B0;
         B3(seq(2,3),seq(1,last,2)) = B0;
 
@@ -241,7 +239,6 @@ void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXi &conn, vector<int> &discont
     if(mg(i) == 0)
       mg(i) = 1.0;
   }
-  // cout << area << endl;
 }
 
 void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> fn_elements, double E, double nu){
@@ -264,9 +261,6 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector
     else{
 
       vector<vector<int> > lconn = fn_elements[i].conn;
-      // cout << "lconn" << endl;
-      // print_vector(lconn);
-      // cout << endl;
       for (int j = 0; j < lconn.size(); ++j){
         if(fn_elements[i].active[j]){
           vector<int> nodes = lconn[j];
@@ -277,11 +271,6 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector
                               nodes[1]*2, nodes[1]*2+1,
                               nodes[2]*2, nodes[2]*2+1};
           VectorXd u = un(dof);
-          // cout << endl;
-          // cout << "xv" << endl;
-          // cout << xv << endl;
-          // cout << "kl" << endl;
-          // cout << kl << endl;
           fi(dof) = fi(dof) + (kl*u);
 
         }
@@ -290,37 +279,37 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector
   }
 }
 
-void assemble_lcg(VectorXd &lcg, VectorXd &vn, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> fn_elements, double eta){
+void assemble_lcg(VectorXd &lcg, VectorXd &vn, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> fn_elements, double rho, double alpha){
   double area = 0;
   int nelm = conn.rows();
   for(int i = 0; i < nelm; ++i){
     if(!discont[i]){
       VectorXi nodes = conn(i,all);
       MatrixXd xv = x(nodes,all);
-      MatrixXd cl = (MatrixXd::Ones(4*2,4*2)).array()*eta;
+      MatrixXd cl = alpha*quad_ml(xv,area,rho).array();
+
       vector<int> dof = {   nodes(0)*2, nodes(0)*2+1,
                             nodes(1)*2, nodes(1)*2+1,
                             nodes(2)*2, nodes(2)*2+1,
                             nodes(3)*2, nodes(3)*2+1};
-      VectorXd v = vn(dof);
 
+      VectorXd v = vn(dof);
       lcg(dof) = lcg(dof) + (cl*v);
     }
     else{
       vector<vector<int> > lconn = fn_elements[i].conn;
       for (int j = 0; j < lconn.size(); ++j){
         if(fn_elements[i].active[j]){
-          VectorXi nodes = conn(i,all);
+          vector<int> nodes = lconn[j];
           MatrixXd xv = x(nodes,all);
-          MatrixXd cl = (MatrixXd::Ones(3*2,3*2)).array()*eta;
+          MatrixXd cl = alpha*tri_ml(xv,area,rho).array();
 
           vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
                               nodes[1]*2, nodes[1]*2+1,
                               nodes[2]*2, nodes[2]*2+1};
+
           VectorXd v = vn(dof);
-
           lcg(dof) = lcg(dof) + (cl*v);
-
         }
       }
     }

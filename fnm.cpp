@@ -6,6 +6,8 @@
 
 int main(int argc, char* argv[]){
   double dt = 0.05, tmax = 1.0;
+  double E = 1, nu = 0, rho = 1, alpha = 0;
+
   if(argc == 2){
     dt = atof(argv[1]);
   }
@@ -17,6 +19,12 @@ int main(int argc, char* argv[]){
     dt = atof(argv[1]);
     tmax = atof(argv[2]);
     sy = atof(argv[3]);
+  }
+  else if(argc == 5){
+    dt = atof(argv[1]);
+    tmax = atof(argv[2]);
+    sy = atof(argv[3]);
+    alpha = atof(argv[4]);
   }
 
   MatrixXi elements = load_csv<MatrixXi,int>("/home/hsharsh/fnm/elements.inp");
@@ -30,7 +38,6 @@ int main(int argc, char* argv[]){
   int nnod = nodes.rows();
   int ndof = 2*nnod;
   int nelm = elements.rows();
-  double E = 1, nu = 0, rho = 1, eta = 0;
 
   // nnod*4 to include the maximum number of floating nodes considering only type 1 and type 2 kind of division
   VectorXd un = VectorXd::Zero(nnod*2+nelm*8), un1 = VectorXd::Zero(nnod*2+nelm*8);
@@ -56,11 +63,11 @@ int main(int argc, char* argv[]){
     // Linearized Global Stiffness matrix assembly
     assemble_fi(fi, un, x, conn, discont, fn_elements, E, nu);
 
-    // Linearized Global damping matrix
-    assemble_lcg(lcg, vn, x, conn, discont, fn_elements, eta);
-
     // Linearized Global Mass matrix assembly
     assemble_mg(mg, x, conn, discont, fn_elements, rho, ndof);
+
+    // Linearized Global damping matrix
+    assemble_lcg(lcg, vn, x, conn, discont, fn_elements, rho, alpha);
 
     // BC for fg
     boundary_conditions(un,un1,vn,vn1,fg);
@@ -78,15 +85,15 @@ int main(int argc, char* argv[]){
     un1 = un + vn1*dt;
 
     // BC for displacement
-    // boundary_conditions(un,un1,vn,vn1,fg);
+    boundary_conditions(un,un1,vn,vn1,fg);
 
     // Define crack
-    if(abs(t-0.5) < 1e-5){
-      cout << "Crack added" << endl;
-      crack_def(discont,fn_elements);
-    }
+    // if(abs(t-0.5) < 1e-5){
+    //   cout << "Crack added" << endl;
+    //   crack_def(discont,fn_elements);
+    // }
 
-    // stress_based_crack(discont, fn_elements, conn, x, un1, ndof, E, nu);
+    stress_based_crack(discont, fn_elements, conn, x, un1, ndof, E, nu);
 
     // Add floating nodes to the global matrices
     floating_nodes(discont, fn_elements, conn, x, un1, ndof);

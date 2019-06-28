@@ -1,7 +1,7 @@
 // Boundary conditions for simple case used for debugging
 // Activate only the boundary_conditions function. No temporary bc is needed
 
-void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn1){
+void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn1, VectorXd &fg){
   double bcx, bcy;
   VectorXi left = VectorXi::LinSpaced(4,1,13);
   left = left.array()-1;
