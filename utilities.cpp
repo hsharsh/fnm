@@ -13,8 +13,9 @@
   vector<double> xgp = {-sqrt(3.0/5.0), 0, sqrt(3.0/5.0)};
   vector<double> wgp = {5.0/9.0, 8.0/9.0, 5.0/9.0};
   int ngp = wgp.size();
-  double active_tol = 1e-4; // Should be 1e-5 for the plate with a hole
+  double active_tol = 5e-6; // Should be 1e-5 for the plate with a hole
   double sy = 1e-5;
+  int cracked = 0;
 
   // Reading CSV files into an Eigen MatrixXd variable
   template<typename M, typename type>
@@ -36,7 +37,7 @@
       return Map<const Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
   }
 
-  void print_vector(vector<vector<double> > v){
+  void print(vector<vector<double> > v){
     int ni = v.size(), nj = v[0].size();
     cout << endl;
     for (int i = 0; i < ni; ++i){
@@ -48,7 +49,7 @@
     cout << endl;
   }
 
-  void print_vector(vector<vector<int> > v){
+  void print(vector<vector<int> > v){
     int ni = v.size(), nj = v[0].size();
     cout << endl;
     for (int i = 0; i < ni; ++i){
@@ -59,7 +60,7 @@
     }
     cout << endl;
   }
-  void print_vector(vector<double> v){
+  void print(vector<double> v){
     int ni = v.size();
     cout << endl;
     for (int i = 0; i < ni; ++i){
@@ -68,7 +69,7 @@
     cout << endl;
   }
 
-  void print_vector(vector<int> v){
+  void print(vector<int> v){
     int ni = v.size();
     cout << endl;
     for (int i = 0; i < ni; ++i){

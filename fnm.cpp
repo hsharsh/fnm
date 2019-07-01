@@ -8,6 +8,18 @@ int main(int argc, char* argv[]){
   double dt = 0.05, tmax = 1.0;
   double E = 1, nu = 0, rho = 1, alpha = 0;
 
+  MatrixXi elements = load_csv<MatrixXi,int>("/home/hsharsh/fnm/elements.inp");
+  MatrixXd nodes = load_csv<MatrixXd,double>("/home/hsharsh/fnm/nodes.inp");
+
+  // All coefficients are decreased by one for consistency with 0-indexing
+  MatrixXd x = MatrixXd::Zero(nodes.rows()*2+elements.rows()*4,2);
+  x(seq(0,nodes.rows()-1),all) = nodes(all,seq(1,last));
+  MatrixXi conn = elements(all,seq(1,last)).array()-1;
+
+  int nnod = nodes.rows();
+  int ndof = 2*nnod;
+  int nelm = elements.rows();
+
   if(argc == 2){
     dt = atof(argv[1]);
   }
@@ -26,18 +38,6 @@ int main(int argc, char* argv[]){
     sy = atof(argv[3]);
     alpha = atof(argv[4]);
   }
-
-  MatrixXi elements = load_csv<MatrixXi,int>("/home/hsharsh/fnm/elements.inp");
-  MatrixXd nodes = load_csv<MatrixXd,double>("/home/hsharsh/fnm/nodes.inp");
-
-  // All coefficients are decreased by one for consistency with 0-indexing
-  MatrixXd x = MatrixXd::Zero(nodes.rows()*2+elements.rows()*4,2);
-  x(seq(0,nodes.rows()-1),all) = nodes(all,seq(1,last));
-  MatrixXi conn = elements(all,seq(1,last)).array()-1;
-
-  int nnod = nodes.rows();
-  int ndof = 2*nnod;
-  int nelm = elements.rows();
 
   // nnod*4 to include the maximum number of floating nodes considering only type 1 and type 2 kind of division
   VectorXd un = VectorXd::Zero(nnod*2+nelm*8), un1 = VectorXd::Zero(nnod*2+nelm*8);
@@ -115,8 +115,8 @@ int main(int argc, char* argv[]){
 
       VectorXd str = stress(seq(0,(ndof/2)-1));
 
-      xdef(all,0) = x(seq(0,(ndof/2)-1),0) + un(seq(0,ndof-1,2));
-      xdef(all,1) = x(seq(0,(ndof/2)-1),1) + un(seq(1,ndof-1,2));
+      xdef(all,0) = x(seq(0,(ndof/2)-1),0) + un1(seq(0,ndof-1,2));
+      xdef(all,1) = x(seq(0,(ndof/2)-1),1) + un1(seq(1,ndof-1,2));
 
       u(all,0) = un1(seq(0,ndof-1,2));    u(all,1) = un1(seq(1,ndof-1,2));
       v(all,0) = vn1(seq(0,ndof-1,2));    v(all,1) = vn1(seq(1,ndof-1,2));
@@ -149,6 +149,11 @@ int main(int argc, char* argv[]){
     }
     else
       ++n;
+
+    if(cracked == 1){
+      cracked = 2;
+      dt/=4;
+    }
 
     t = t+dt;
     un = un1;

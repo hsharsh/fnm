@@ -102,6 +102,9 @@ void stress_based_crack(vector<int> &discont, map <int,element> &fn_elements, Ma
           }
         }
         cout << "Crack added at element " << i << endl;
+        if(cracked == 0){
+          cracked = 1;
+        }
         discont[i] = 1;
         fn_elements[i] = fn;
       }
