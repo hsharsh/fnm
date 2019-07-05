@@ -5,9 +5,9 @@
 #include "crack_def.cpp"
 
 int main(int argc, char* argv[]){
-  double dt = 0.05, tmax = 1.0;
-  double E = 1, nu = 0, rho = 1, alpha = 0;
-
+  double dt, tmax, E, nu, rho, alpha;
+  if(system("exec rm -r /home/hsharsh/fnm/data/*"))
+    cerr << "Error clearing old data.";
   MatrixXi elements = load_csv<MatrixXi,int>("/home/hsharsh/fnm/elements.inp");
   MatrixXd nodes = load_csv<MatrixXd,double>("/home/hsharsh/fnm/nodes.inp");
 
@@ -20,23 +20,40 @@ int main(int argc, char* argv[]){
   int ndof = 2*nnod;
   int nelm = elements.rows();
 
-  if(argc == 2){
-    dt = atof(argv[1]);
+  ifstream cFile("parameters.cfg");
+  if (cFile.is_open()){
+      cout << "Running with parameters:" << endl;
+      string line;
+      while(getline(cFile, line)){
+      line.erase(remove_if(line.begin(), line.end(), ::isspace),line.end());
+      if(line[0] == '#' || line.empty())
+        continue;
+      auto delimiterPos = line.find("=");
+      string name = line.substr(0, delimiterPos);
+      string value = line.substr(delimiterPos + 1);
+      cout << name << ":\t" << value << endl;
+      if(name == "dt")
+        dt = stof(value);
+      if(name == "tmax")
+        tmax = stof(value);
+      if(name == "E")
+        E = stof(value);
+      if(name == "nu")
+        nu = stof(value);
+      if(name == "rho")
+        rho = stof(value);
+      if(name == "alpha")
+        alpha = stof(value);
+      if(name == "sy")
+        sy = stof(value);
+      if(name == "ar_tol")
+        ar_tol = stof(value);
+    }
+    cout << endl;
   }
-  else if(argc == 3){
-    dt = atof(argv[1]);
-    tmax = atof(argv[2]);
-  }
-  else if(argc == 4){
-    dt = atof(argv[1]);
-    tmax = atof(argv[2]);
-    sy = atof(argv[3]);
-  }
-  else if(argc == 5){
-    dt = atof(argv[1]);
-    tmax = atof(argv[2]);
-    sy = atof(argv[3]);
-    alpha = atof(argv[4]);
+  else{
+    cerr << "Couldn't open config file for reading." << endl;
+    return 0;
   }
 
   // nnod*4 to include the maximum number of floating nodes considering only type 1 and type 2 kind of division
@@ -88,10 +105,10 @@ int main(int argc, char* argv[]){
     boundary_conditions(un,un1,vn,vn1,fg);
 
     // Define crack
-    // if(abs(t-0) < 1e-5){
-    //   cout << "Crack added" << endl;
-    //   crack_def(discont,fn_elements);
-    // }
+    if(abs(t-0) < 1e-5){
+      cout << "Crack added" << endl;
+      crack_def(discont,fn_elements);
+    }
 
     stress_based_crack(discont, fn_elements, conn, x, un1, ndof, E, nu);
 

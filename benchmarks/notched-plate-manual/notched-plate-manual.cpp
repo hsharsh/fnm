@@ -37,9 +37,9 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
 }
 
 void crack_def(vector<int> &discont, map<int,element> &fn_elements){
-
-  vector <int> cracked = {784, 783, 782, 781, 780};
-  
+  VectorXi cracked(5);
+  cracked << 784, 783, 782, 781, 780;
+  cracked = cracked.array()-1;
   for (int i = 0; i < cracked.size(); ++i){
     discont[cracked[i]] = 1;
     fn_elements[cracked[i]].edge = {NAN, 0.5, NAN, 0.5};

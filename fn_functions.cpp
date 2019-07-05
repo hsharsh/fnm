@@ -149,7 +149,7 @@ void remove_singular_elements(map <int,element> &fn_elements, MatrixXd &x){
         vector<int> nodes = lconn[j];
         MatrixXd xv = x(nodes,all);
         double area_elem = 0.5*(xv(0,0)*xv(1,1)-xv(1,0)*xv(0,1) + xv(1,0)*xv(2,1)-xv(2,0)*xv(1,1) + xv(2,0)*xv(0,1)-xv(0,0)*xv(2,1));
-        if(area_elem < active_tol){
+        if(area_elem < ar_tol){
           it->second.active[j] = 0;
         }
       }

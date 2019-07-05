@@ -2,6 +2,7 @@
 #define UTILITIES
 
   #include<bits/stdc++.h>
+  #include<algorithm>
   #include<eigen-unstable/Eigen/Dense>
 
   using namespace Eigen;
@@ -13,8 +14,7 @@
   vector<double> xgp = {-sqrt(3.0/5.0), 0, sqrt(3.0/5.0)};
   vector<double> wgp = {5.0/9.0, 8.0/9.0, 5.0/9.0};
   int ngp = wgp.size();
-  double active_tol = 2.5e-6; // Should be 1e-5 for the plate with a hole
-  double sy = 1e-5;
+  double ar_tol,sy;
   int cracked = 0;
 
   // Reading CSV files into an Eigen MatrixXd variable

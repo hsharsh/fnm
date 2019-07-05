@@ -10,3 +10,6 @@ Note that while using operations like x = x(slice), it is possible to get errors
 
 Reading csv files is taken from the following answer on Stackoverflow:
 https://stackoverflow.com/a/39146048
+
+Reading from a configuration file taken from the folowing blogpost:
+https://www.walletfox.com/course/parseconfigfile.php
