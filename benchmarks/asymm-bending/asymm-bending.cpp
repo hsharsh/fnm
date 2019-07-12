@@ -1,12 +1,12 @@
-#include "utilities.cpp"
+// Boundary conditions for square plate with velocity on both sides
+// Activate the temporary_bc for 4 seconds. Initiate crack just before 15 seconds.
 
-// Note that with 0-indexed arrays, first dof is node*(#dofs), next is node*(#dofs)+1, and so on
 void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn1, VectorXd &fg){
   double bcx, bcy;
   // VectorXi left(9);
   // left << 203,  204,  205, 1384, 1385, 1386, 1408, 1409, 1410;
   VectorXi left(4);
-  left << 167,  168,  169, 1877;
+  left << 115,  116,  117, 1204;
   left = left.array()-1;
   bcx = 0;
   bcy = 0;
@@ -21,7 +21,7 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
   // VectorXi right(9);
   // right <<  90,   91,   92, 1180, 1181, 1188, 1189, 1196, 1197;
   VectorXi right(4);
-  right <<  344,  345,  346, 3374;
+  right <<  270,  271,  272, 1883;
   right = right.array()-1;
   bcy = 0;
   for(int i=0; i < right.size();++i){
@@ -32,7 +32,7 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
   }
 
   VectorXi top(4);
-  top << 821,  822,  823, 5148;
+  top << 626,  627,  628, 2544;
   top = top.array()-1;
   bcy = -1e-4;
   for(int i=0; i < top.size();++i){
@@ -43,18 +43,17 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
   }
 }
 
-void temporary_bc(VectorXd &vn, VectorXd &vn1){
-  double bcx, bcy;
-  VectorXi left = VectorXi::LinSpaced(5,1,169);
-  left = left.array()-1;
-  bcx = 0.00866025;
-  bcy = 0.006;
-  for(int i=0; i < left.size();++i){
-    int node_bc = left(i);
-    int idof = node_bc*2;
-    vn(idof) = bcx;
-    vn(idof+1) = bcy;
-    vn1(idof) = bcx;
-    vn1(idof+1) = bcy;
-  }
-}
+ void crack_def(vector<int> &discont, map<int,element> &fn_elements){
+   vector<int> cracked;
+   for(int i = 1116; i <= 1120; ++i)
+     cracked.push_back(i-1);
+   for (int i = 0; i < cracked.size(); ++i){
+     discont[cracked[i]] = 1;
+     fn_elements[cracked[i]].edge = {NAN, 0.9524, NAN, 0.0476};
+   }
+ }
+
+// dt=5e-2
+// tmax = 100
+// sy = 2e-3
+// ar_tol = 2e-3

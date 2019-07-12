@@ -3,13 +3,13 @@
 void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn1, VectorXd &fg){
   double bcx, bcy;
   // Syntax: LinSpaced(#elements,start,end). Decrease the start and end by 1 (if taken from a 1-indexed mesh), to reflect 0-indexing
-  VectorXi bottom(38);
-  bottom <<  7,   8,  15,  16, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
-120, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 316, 317,
-318, 319, 320, 321, 322, 323;
+  VectorXi bottom(47);
+  bottom <<     21,  22,  25,  28, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317,
+ 318, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 481, 482,
+ 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497;
   bottom = bottom.array()-1;
   bcx = 0;
-  bcy = -1e-4;
+  bcy = 0;
   for(int i=0; i < bottom.size();++i){
     long node_bc = bottom(i);
     long idof = node_bc*2;
@@ -19,10 +19,10 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
     vn1(idof+1) = bcy;
   }
 
-  VectorXi top(39);
-  top <<   1,   4,  11,  12,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,
- 69, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 274, 275,
-276, 277, 278, 279, 280, 281, 282;
+  VectorXi top(47);
+  top <<      1,   5,  10,  12,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,  85,  86,
+ 87,  88,  89,  90,  91, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153,
+154, 155, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181;
   top = top.array()-1;
   bcx = 0;
   bcy = 1e-4;
@@ -37,11 +37,14 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
 }
 
 void crack_def(vector<int> &discont, map<int,element> &fn_elements){
-  VectorXi cracked(5);
-  cracked << 784, 783, 782, 781, 780;
-  cracked = cracked.array()-1;
+  vector<int> cracked;
+  for(int i = 2549; i <= 2553; ++i)
+    cracked.push_back(i-1);
+
   for (int i = 0; i < cracked.size(); ++i){
     discont[cracked[i]] = 1;
-    fn_elements[cracked[i]].edge = {NAN, 0.5, NAN, 0.5};
+    fn_elements[cracked[i]].edge = {NAN, 0.3228, NAN, 0.6772};
   }
 }
+
+// dt = 1e-3

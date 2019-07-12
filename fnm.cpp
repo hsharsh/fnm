@@ -7,7 +7,7 @@
 int main(int argc, char* argv[]){
   double dt, tmax, E, nu, rho, alpha;
   if(system("exec rm -r /home/hsharsh/fnm/data/*"))
-    cerr << "Error clearing old data.";
+    cerr << "Error clearing old data" << endl;
   MatrixXi elements = load_csv<MatrixXi,int>("/home/hsharsh/fnm/elements.inp");
   MatrixXd nodes = load_csv<MatrixXd,double>("/home/hsharsh/fnm/nodes.inp");
 

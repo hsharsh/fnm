@@ -2,12 +2,12 @@
 
 // Don't forget to make dicsont corresponding to the element as "1" to activate the floating nodes.
 void crack_def(vector<int> &discont, map<int,element> &fn_elements){
-  VectorXi cracked(4);
-  cracked << 716, 741, 766,  791;
-  cracked = cracked.array()-1;
+  vector<int> cracked;
+  for(int i = 2511; i <= 2520; ++i)
+    cracked.push_back(i-1);
   for (int i = 0; i < cracked.size(); ++i){
     discont[cracked[i]] = 1;
-    fn_elements[cracked[i]].edge = {0.5, NAN, 0.5, NAN};
+    fn_elements[cracked[i]].edge = {NAN, 0.9047, NAN, 0.0953};
   }
 }
 
