@@ -5,7 +5,7 @@
 #include "crack_def.cpp"
 
 int main(int argc, char* argv[]){
-  double dt, tmax, E, nu, rho, alpha;
+  double dt, tmax, E, nu, rho, alpha, nf, tc, rf;
   if(system("exec rm -r /home/hsharsh/fnm/data/*"))
     cerr << "Error clearing old data" << endl;
   MatrixXi elements = load_csv<MatrixXi,int>("/home/hsharsh/fnm/elements.inp");
@@ -48,6 +48,12 @@ int main(int argc, char* argv[]){
         sy = stof(value);
       if(name == "ar_tol")
         ar_tol = stof(value);
+      if(name == "nf")
+        nf = stoi(value);
+      if(name == "tc")
+        tc = stof(value);
+      if(name == "rf")
+        rf = stoi(value);
     }
     cout << endl;
   }
@@ -67,7 +73,8 @@ int main(int argc, char* argv[]){
   // boundary_conditions(vn,vn1);
   // boundary_conditions(un,un1,vn,vn1);
 
-  double t = 0, n = 1, nf = 1;
+  double t = 0, n = nf, ti = 0;
+  bool crack_active = 1;
   while(t <= tmax){
     cout << "Time: " << t << endl;
 
@@ -106,11 +113,25 @@ int main(int argc, char* argv[]){
 
     // Define crack
     if(abs(t-0) < 1e-5){
-      cout << "Crack added" << endl;
+      cout << "Crack intialized" << endl;
       crack_def(discont,fn_elements);
     }
 
-    stress_based_crack(discont, fn_elements, conn, x, un1, ndof, E, nu);
+    if(crack_active){
+      int c = stress_based_crack(discont, fn_elements, conn, x, un1, ndof, E, nu);
+      if (c == 1){
+        crack_active = 0;
+      }
+    }
+    else{
+      if(ti < tc)
+        ti+=dt;
+      else{
+        ti = 0;
+        crack_active = 1;
+      }
+    }
+
 
     // Add floating nodes to the global matrices
     floating_nodes(discont, fn_elements, conn, x, un1, ndof);
@@ -169,7 +190,7 @@ int main(int argc, char* argv[]){
 
     if(cracked == 1){
       cracked = 2;
-      dt/=4;
+      dt/=rf;
     }
 
     t = t+dt;

@@ -3,15 +3,16 @@
 // Don't forget to make dicsont corresponding to the element as "1" to activate the floating nodes.
 void crack_def(vector<int> &discont, map<int,element> &fn_elements){
   vector<int> cracked;
-  for(int i = 2511; i <= 2520; ++i)
+  for(int i = 5453; i <= 5472; ++i)
     cracked.push_back(i-1);
   for (int i = 0; i < cracked.size(); ++i){
     discont[cracked[i]] = 1;
-    fn_elements[cracked[i]].edge = {NAN, 0.9047, NAN, 0.0953};
+    fn_elements[cracked[i]].edge = {NAN, 0.1905, NAN, 0.8095};
   }
 }
 
-void stress_based_crack(vector<int> &discont, map <int,element> &fn_elements, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof, double E, double nu){
+int stress_based_crack(vector<int> &discont, map <int,element> &fn_elements, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof, double E, double nu){
+  int ci = 0;
   int nelm = conn.rows();
   vector <double> xgp = {0};
   vector <double> wgp = {2};
@@ -104,9 +105,11 @@ void stress_based_crack(vector<int> &discont, map <int,element> &fn_elements, Ma
         if(cracked == 0){
           cracked = 1;
         }
+        ci = 1;
         discont[i] = 1;
         fn_elements[i] = fn;
       }
     }
   }
+  return ci;
 }
