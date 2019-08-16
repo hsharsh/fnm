@@ -53,7 +53,14 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
    }
  }
 
-// dt=2e-2
-// tmax = 100
-// sy = 1.5e-3
-// ar_tol = 5e-4
+tmax = 150
+dt = 2e-2
+E = 1
+nu = 0
+rho = 1
+alpha = 0
+sy = 1.5e-3
+ar_tol = 5e-4
+rf = 1
+tc = 0
+nf = 10

@@ -3,6 +3,7 @@
 
   #include<bits/stdc++.h>
   #include<algorithm>
+  #include<sys/stat.h>
   #include<eigen-unstable/Eigen/Dense>
 
   using namespace Eigen;
@@ -16,6 +17,7 @@
   int ngp = wgp.size();
   double ar_tol,sy;
   int cracked = 0;
+  string path = "/home/hsharsh/fnm/data";
 
   // Reading CSV files into an Eigen MatrixXd variable
   template<typename M, typename type>
@@ -78,9 +80,9 @@
     cout << endl;
   }
   void vtkwrite(string filename, vector<vector<int> > fl_connectivity, long s, MatrixXd position, MatrixXd u, MatrixXd v, MatrixXd a, VectorXd stress, MatrixXd fi){
-    string path = "/home/hsharsh/fnm/data/";
-    path.append(filename);
-    ofstream writer(path);
+    string p = path;
+    p.append(filename);
+    ofstream writer(p);
 
     if(writer.is_open()){
       writer << "# vtk DataFile Version 1.0\n";
@@ -132,7 +134,8 @@
       writer.close();
     }
     else{
-      cerr << "Cannot open file";
+      cerr << "Cannot open file" << endl;
+      exit(0);
     }
   }
 #endif

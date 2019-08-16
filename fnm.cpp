@@ -2,12 +2,16 @@
 #include "fn_functions.cpp"
 #include "fe_functions.cpp"
 #include "bound_cond.cpp"
-#include "crack_def.cpp"
+#include "crack_def-2.cpp"
 
 int main(int argc, char* argv[]){
   double dt, tmax, E, nu, rho, alpha, nf, tc, rf;
-  if(system("exec rm -r /home/hsharsh/fnm/data/*"))
-    cerr << "Error clearing old data" << endl;
+  // if(system("exec rm -r /home/hsharsh/fnm/data/*"))
+  //   cerr << "Error clearing old data" << endl;
+
+  path.append(to_string((int)time(0)).append("/"));
+  mkdir(path.c_str(),0777);
+
   MatrixXi elements = load_csv<MatrixXi,int>("/home/hsharsh/fnm/elements.inp");
   MatrixXd nodes = load_csv<MatrixXd,double>("/home/hsharsh/fnm/nodes.inp");
 
@@ -69,7 +73,7 @@ int main(int argc, char* argv[]){
 
   vector<int> discont(nnod,0);
   map <int,element> fn_elements;
-
+  map <pair<int,int>,double> cparam;
   // boundary_conditions(vn,vn1);
   // boundary_conditions(un,un1,vn,vn1);
 
@@ -114,11 +118,11 @@ int main(int argc, char* argv[]){
     // Define crack
     if(abs(t-0) < 1e-5){
       cout << "Crack intialized" << endl;
-      crack_def(discont,fn_elements);
+      crack_def(discont,fn_elements, conn, cparam);
     }
 
     if(crack_active){
-      int c = stress_based_crack(discont, fn_elements, conn, x, un1, ndof, E, nu);
+      int c = stress_based_crack(discont, fn_elements, cparam, conn, x, un1, ndof, E, nu);
       if (c == 1){
         crack_active = 0;
       }
@@ -191,6 +195,7 @@ int main(int argc, char* argv[]){
     if(cracked == 1){
       cracked = 2;
       dt/=rf;
+      nf = 5;
     }
 
     t = t+dt;
