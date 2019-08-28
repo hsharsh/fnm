@@ -3,7 +3,7 @@
 // Don't forget to make dicsont corresponding to the element as "1" to activate the floating nodes.
 void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &conn, map <pair<int,int>,double> &cparam){
   vector<int> cracked;
-  for(int i = 5474; i <= 5493; ++i)
+  for(int i = 11129; i <= 11148; ++i)
     cracked.push_back(i-1);
   for (int i = 0; i < cracked.size(); ++i){
     discont[cracked[i]] = 1;
@@ -22,6 +22,8 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &co
 int stress_based_crack(vector<int> &discont, map <int,element> &fn_elements, map <pair<int,int>,double> &cparam, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof, double E, double nu){
   int ci = 0;
   int nelm = conn.rows();
+  vector<double> xgp = {0};
+  vector<double> wgp = {2};
   int ngp = wgp.size();
 
   for(int i = 0; i < nelm; ++i){

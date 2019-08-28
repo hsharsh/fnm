@@ -205,6 +205,7 @@ MatrixXd quad_ml(MatrixXd &xv, double &area, double rho){
 void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> fn_elements, double rho, int ndof){
   double area = 0;
   int nelm = conn.rows();
+
   for(int i = 0; i < nelm; ++i){
     if(!discont[i]){
       VectorXi nodes = conn(i,all);
@@ -244,6 +245,10 @@ void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXi &conn, vector<int> &discont
 void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> fn_elements, double E, double nu){
   double area = 0;
   int nelm = conn.rows();
+
+  // omp_set_num_threads(4);
+
+  #pragma omp parallel for
   for(int i = 0; i < nelm; ++i){
     if(!discont[i]){
       VectorXi nodes = conn(i,all);
@@ -256,7 +261,8 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector
                             nodes(3)*2, nodes(3)*2+1};
       VectorXd u = un(dof);
 
-      fi(dof) = fi(dof) + (kl*u);
+      #pragma omp critical
+        fi(dof) = fi(dof) + (kl*u);
     }
     else{
 
@@ -271,7 +277,9 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector
                               nodes[1]*2, nodes[1]*2+1,
                               nodes[2]*2, nodes[2]*2+1};
           VectorXd u = un(dof);
-          fi(dof) = fi(dof) + (kl*u);
+
+          #pragma omp critical
+            fi(dof) = fi(dof) + (kl*u);
 
         }
       }

@@ -1,6 +1,6 @@
-#include "utilities.cpp"
+// Boundary conditions for square plate with velocity on both sides
+// Activate the temporary_bc for 4 seconds. Initiate crack just before 15 seconds.
 
-// Note that with 0-indexed arrays, first dof is node*(#dofs), next is node*(#dofs)+1, and so on
 void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn1, VectorXd &fg){
   double bcx, bcy;
   // VectorXi left(9);
@@ -43,19 +43,32 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
   }
 }
 
+ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &conn, map <pair<int,int>,double> &cparam){
+   vector<int> cracked;
+   for(int i = 11129; i <= 11148; ++i)
+     cracked.push_back(i-1);
+   for (int i = 0; i < cracked.size(); ++i){
+     discont[cracked[i]] = 1;
+     fn_elements[cracked[i]].edge = {NAN, 0.1905, NAN, 0.8095};
+     VectorXi nodes = conn(cracked[i],all);
+     for(int j = 0; j < 4; ++j){
+       if(!isnan(fn_elements[cracked[i]].edge[j])){
+         if(cparam.find(make_pair(nodes(j),nodes((j+1)%4))) == cparam.end() && cparam.find(make_pair(nodes((j+1)%4),nodes(j))) == cparam.end()){
+           cparam[make_pair(nodes(j),nodes((j+1)%4))] = fn_elements[cracked[i]].edge[j];
+         }
+       }
+     }
+   }
+ }
 
-void temporary_bc(VectorXd &vn, VectorXd &vn1){
-  double bcx, bcy;
-  VectorXi left = VectorXi::LinSpaced(5,1,169);
-  left = left.array()-1;
-  bcx = 0.00866025;
-  bcy = 0.006;
-  for(int i=0; i < left.size();++i){
-    int node_bc = left(i);
-    int idof = node_bc*2;
-    vn(idof) = bcx;
-    vn(idof+1) = bcy;
-    vn1(idof) = bcx;
-    vn1(idof+1) = bcy;
-  }
-}
+ tmax = 200
+ dt = 2e-2
+ E = 1
+ nu = 0
+ rho = 1
+ alpha = 0.05
+ sy = 1
+ ar_tol = 2.5e-4
+ rf = 2
+ tc = 0.1
+ nf = 100

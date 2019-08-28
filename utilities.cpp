@@ -5,6 +5,7 @@
   #include<algorithm>
   #include<sys/stat.h>
   #include<eigen-unstable/Eigen/Dense>
+  #include<omp.h>
 
   using namespace Eigen;
   using namespace std;
