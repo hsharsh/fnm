@@ -2,13 +2,14 @@
 #include "fn_functions.cpp"
 #include "fe_functions.cpp"
 #include "bound_cond.cpp"
+#include "j_int_formulation.cpp"
 #include "crack_def-2.cpp"
 
 int main(int argc, char* argv[]){
-  double dt, tmax, E, nu, rho, alpha, nf, tc, rf;
-  // if(system("exec rm -r /home/hsharsh/fnm/data/*"))
-  //   cerr << "Error clearing old data" << endl;
+  double dt, tmax, E, nu, rho, alpha;
+  int sampling_rate, tc, rf, nlayers;
 
+  // Creating a folder with time-stamp for saving data
   path.append(to_string((int)time(0)).append("/"));
   mkdir(path.c_str(),0777);
 
@@ -24,47 +25,14 @@ int main(int argc, char* argv[]){
   int ndof = 2*nnod;
   int nelm = elements.rows();
 
-  ifstream cFile("parameters.cfg");
-  if (cFile.is_open()){
-      cout << "Running with parameters:" << endl;
-      string line;
-      while(getline(cFile, line)){
-      line.erase(remove_if(line.begin(), line.end(), ::isspace),line.end());
-      if(line[0] == '#' || line.empty())
-        continue;
-      auto delimiterPos = line.find("=");
-      string name = line.substr(0, delimiterPos);
-      string value = line.substr(delimiterPos + 1);
-      cout << name << ":\t" << value << endl;
-      if(name == "dt")
-        dt = stof(value);
-      if(name == "tmax")
-        tmax = stof(value);
-      if(name == "E")
-        E = stof(value);
-      if(name == "nu")
-        nu = stof(value);
-      if(name == "rho")
-        rho = stof(value);
-      if(name == "alpha")
-        alpha = stof(value);
-      if(name == "sy")
-        sy = stof(value);
-      if(name == "ar_tol")
-        ar_tol = stof(value);
-      if(name == "nf")
-        nf = stoi(value);
-      if(name == "tc")
-        tc = stof(value);
-      if(name == "rf")
-        rf = stoi(value);
-    }
-    cout << endl;
-  }
-  else{
+  if(!load_config(dt, tmax, E, nu, rho, alpha, sy, ar_tol, sampling_rate, tc, rf, nlayers)){
     cerr << "Couldn't open config file for reading." << endl;
     return 0;
   }
+
+  // Compute neighbours for J-integral computation
+  vector<vector<int> > neighbours(nnod*2+nelm*8);
+  compute_neighbours(neighbours, conn);
 
   // nnod*4 to include the maximum number of floating nodes considering only type 1 and type 2 kind of division
   VectorXd un = VectorXd::Zero(nnod*2+nelm*8), un1 = VectorXd::Zero(nnod*2+nelm*8);
@@ -77,10 +45,10 @@ int main(int argc, char* argv[]){
   // boundary_conditions(vn,vn1);
   // boundary_conditions(un,un1,vn,vn1);
 
-  double t = 0, n = nf, ti = 0;
+  double t = 0, n = sampling_rate, ti = 0;
   bool crack_active = 1;
   while(t <= tmax){
-    cout << "Time: " << t << endl;
+    // cout << "Time: " << t << endl;
 
     VectorXd mg = VectorXd::Zero(ndof);
     VectorXd fi = VectorXd::Zero(ndof);
@@ -121,20 +89,24 @@ int main(int argc, char* argv[]){
       crack_def(discont,fn_elements, conn, cparam);
     }
 
-    if(crack_active){
-      int c = stress_based_crack(discont, fn_elements, cparam, conn, x, un1, ndof, E, nu);
-      if (c == 1){
-        crack_active = 0;
-      }
-    }
-    else{
-      if(ti < tc)
-        ti+=dt;
-      else{
-        ti = 0;
-        crack_active = 1;
-      }
-    }
+    // Crack propagation
+
+    write_j("j_int.m",t,compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlayers));
+
+    // if(crack_active){
+    //   int c = stress_based_crack(discont, fn_elements, cparam, conn, x, un1, ndof, E, nu);
+    //   if (c == 1){
+    //     crack_active = 0;
+    //   }
+    // }
+    // else{
+    //   if(ti < tc)
+    //     ti+=dt;
+    //   else{
+    //     ti = 0;
+    //     crack_active = 1;
+    //   }
+    // }
 
 
     // Add floating nodes to the global matrices
@@ -150,7 +122,10 @@ int main(int argc, char* argv[]){
     vector<vector<int> > fl_conn;
     MatrixXd conn_w;
     long s = 0;
-    if(n >= nf){
+    if(n >= sampling_rate){
+      // write_j("j_int.m",t,compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlayers));
+      cout << "Time: " << t << endl;
+
       MatrixXd xdef = MatrixXd::Zero(ndof/2,3);
 
       MatrixXd u = MatrixXd::Zero(ndof/2,3), v = MatrixXd::Zero(ndof/2,3), a = MatrixXd::Zero(ndof/2,3), f = MatrixXd::Zero(ndof/2,3);
@@ -172,9 +147,7 @@ int main(int argc, char* argv[]){
               fl_conn.push_back(fn_elements[i].conn[j]);
               s+=3;
             }
-
           }
-
         }
         else{
           vector<int> elem_conn(conn.cols());
@@ -185,7 +158,7 @@ int main(int argc, char* argv[]){
           s+=4;
         }
       }
-      string filename = "x0";   filename.append(to_string((int)(t*1e5)));   filename.append(".vtk");
+      string filename = "x0";   filename.append(to_string((int)(t*1e8)));   filename.append(".vtk");
       vtkwrite(filename,fl_conn,s,xdef,u,v,a,str,f);
       n = 1;
     }
@@ -195,7 +168,7 @@ int main(int argc, char* argv[]){
     if(cracked == 1){
       cracked = 2;
       dt/=rf;
-      nf = 5;
+      sampling_rate = 5;
     }
 
     t = t+dt;

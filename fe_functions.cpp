@@ -49,6 +49,7 @@ void compute_properties(VectorXd &stress, vector<int> &discont, map <int,element
         D = E/((1+nu)*(1-2*nu))*D.array();
 
         VectorXd str = D*strain;
+        // str_v[nodes(j)].push_back(str(1));
         str_v[nodes(j)].push_back(sqrt((pow(str(0)-str(1),2) + pow(str(0),2) + pow(str(1),2) + 6*(pow(str(2),2)))/2));
       }
     }
@@ -90,6 +91,7 @@ void compute_properties(VectorXd &stress, vector<int> &discont, map <int,element
           double str_mises = sqrt((pow(str(0)-str(1),2) + pow(str(0),2) + pow(str(1),2) + 6*(pow(str(2),2)))/2);
           for (int k = 0; k < 3; ++k)
             str_v[nodes[k]].push_back(str_mises);
+            // str_v[nodes[k]].push_back(str(1));
         }
       }
     }
@@ -104,6 +106,7 @@ void compute_properties(VectorXd &stress, vector<int> &discont, map <int,element
 
 MatrixXd tri_kl(MatrixXd &xv, double &area, double E, double nu){
   MatrixXd kl = MatrixXd::Zero(3*2,3*2);
+
   double area_elem = 0.5*(xv(0,0)*xv(1,1)-xv(1,0)*xv(0,1) + xv(1,0)*xv(2,1)-xv(2,0)*xv(1,1) + xv(2,0)*xv(0,1)-xv(0,0)*xv(2,1));
   MatrixXd B0(2,3), B2 = MatrixXd::Zero(4,6), B1(3,4);
   B0 << xv(1,1)-xv(2,1), xv(2,1)-xv(0,1), xv(0,1)-xv(1,1),
@@ -202,7 +205,7 @@ MatrixXd quad_ml(MatrixXd &xv, double &area, double rho){
   return ml;
 }
 
-void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> fn_elements, double rho, int ndof){
+void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> &fn_elements, double rho, int ndof){
   double area = 0;
   int nelm = conn.rows();
 
@@ -242,11 +245,9 @@ void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXi &conn, vector<int> &discont
   }
 }
 
-void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> fn_elements, double E, double nu){
+void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> &fn_elements, double E, double nu){
   double area = 0;
   int nelm = conn.rows();
-
-  // omp_set_num_threads(4);
 
   #pragma omp parallel for
   for(int i = 0; i < nelm; ++i){
@@ -287,7 +288,7 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector
   }
 }
 
-void assemble_lcg(VectorXd &lcg, VectorXd &vn, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> fn_elements, double rho, double alpha){
+void assemble_lcg(VectorXd &lcg, VectorXd &vn, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> &fn_elements, double rho, double alpha){
   double area = 0;
   int nelm = conn.rows();
   for(int i = 0; i < nelm; ++i){

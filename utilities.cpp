@@ -41,10 +41,10 @@
   }
 
   void print(vector<vector<double> > v){
-    int ni = v.size(), nj = v[0].size();
+    int ni = v.size();
     cout << endl;
     for (int i = 0; i < ni; ++i){
-      for (int j = 0; j < nj; ++j){
+      for (int j = 0; j < v[i].size(); ++j){
         cout << v[i][j] << " ";
       }
       cout << endl;
@@ -53,10 +53,10 @@
   }
 
   void print(vector<vector<int> > v){
-    int ni = v.size(), nj = v[0].size();
+    int ni = v.size();
     cout << endl;
     for (int i = 0; i < ni; ++i){
-      for (int j = 0; j < nj; ++j){
+      for (int j = 0; j < v[i].size(); ++j){
         cout << v[i][j] << " ";
       }
       cout << endl;
@@ -80,6 +80,51 @@
     }
     cout << endl;
   }
+
+  bool load_config(double &dt, double &tmax, double &E, double &nu, double &rho, double &alpha, double &sy, double &ar_tol, int &sampling_rate, int &tc, int &rf, int &nlayers){
+    ifstream cFile("parameters.cfg");
+    if (cFile.is_open()){
+        cout << "Running with parameters:" << endl;
+        string line;
+        while(getline(cFile, line)){
+        line.erase(remove_if(line.begin(), line.end(), ::isspace),line.end());
+        if(line[0] == '#' || line.empty())
+          continue;
+        auto delimiterPos = line.find("=");
+        string name = line.substr(0, delimiterPos);
+        string value = line.substr(delimiterPos + 1);
+        cout << name << ":\t" << value << endl;
+        if(name == "dt")
+          dt = stof(value);
+        if(name == "tmax")
+          tmax = stof(value);
+        if(name == "E")
+          E = stof(value);
+        if(name == "nu")
+          nu = stof(value);
+        if(name == "rho")
+          rho = stof(value);
+        if(name == "alpha")
+          alpha = stof(value);
+        if(name == "sy")
+          sy = stof(value);
+        if(name == "ar_tol")
+          ar_tol = stof(value);
+        if(name == "sampling_rate")
+          sampling_rate = stoi(value);
+        if(name == "tc")
+          tc = stof(value);
+        if(name == "rf")
+          rf = stoi(value);
+        if(name == "nlayers")
+          nlayers = stoi(value);
+      }
+      cout << endl;
+      return 1;
+    }
+    return 0;
+  }
+
   void vtkwrite(string filename, vector<vector<int> > fl_connectivity, long s, MatrixXd position, MatrixXd u, MatrixXd v, MatrixXd a, VectorXd stress, MatrixXd fi){
     string p = path;
     p.append(filename);
@@ -139,4 +184,22 @@
       exit(0);
     }
   }
+
+  void write_j(string filename, double t, double j_integral){
+    string p = path;
+    p.append(filename);
+    ofstream writer(p,ofstream::out | ofstream::app);
+
+    if(writer.is_open()){
+      writer << t << " " << j_integral << "\n";
+      writer.close();
+    }
+    else{
+      cerr << "Cannot open file" << endl;
+      exit(0);
+    }
+  }
+
+  // if(system("exec rm -r /home/hsharsh/fnm/data/*"))
+  //   cerr << "Error clearing old data" << endl;
 #endif

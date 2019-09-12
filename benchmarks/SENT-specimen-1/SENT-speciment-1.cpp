@@ -3,13 +3,10 @@
 void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn1, VectorXd &fg){
   double bcx, bcy;
   // Syntax: LinSpaced(#elements,start,end). Decrease the start and end by 1 (if taken from a 1-indexed mesh), to reflect 0-indexing
-  VectorXi bottom(38);
-  bottom <<  7,   8,  15,  16, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
-120, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 316, 317,
-318, 319, 320, 321, 322, 323;
+  VectorXi bottom = VectorXi::LinSpaced(11,1,11);
   bottom = bottom.array()-1;
   bcx = 0;
-  bcy = -1e-4;
+  bcy = -5e-4;
   for(int i=0; i < bottom.size();++i){
     long node_bc = bottom(i);
     long idof = node_bc*2;
@@ -19,13 +16,10 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
     vn1(idof+1) = bcy;
   }
 
-  VectorXi top(39);
-  top <<   1,   4,  11,  12,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,
- 69, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 274, 275,
-276, 277, 278, 279, 280, 281, 282;
+  VectorXi top = VectorXi::LinSpaced(11,1112,1122);
   top = top.array()-1;
   bcx = 0;
-  bcy = 1e-4;
+  bcy = 5e-4;
   for(int i=0; i < top.size();++i){
     long node_bc = top(i);
     long idof = node_bc*2;
@@ -37,9 +31,10 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
 }
 
 void crack_def(vector<int> &discont, map<int,element> &fn_elements){
-  VectorXi cracked(5);
-  cracked << 784, 783, 782, 781, 780;
-  cracked = cracked.array()-1;
+  vector <int> cracked;
+  for (int i = 507; i <= 510; ++i){
+    cracked.push_back(i-1);
+  }
   for (int i = 0; i < cracked.size(); ++i){
     discont[cracked[i]] = 1;
     fn_elements[cracked[i]].edge = {NAN, 0.5, NAN, 0.5};
@@ -47,9 +42,10 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements){
 }
 
 void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &conn, map <pair<int,int>,double> &cparam){
-  VectorXi cracked(5);
-  cracked << 784, 783, 782, 781, 780;
-  cracked = cracked.array()-1;
+  vector <int> cracked;
+  for (int i = 507; i <= 510; ++i){
+    cracked.push_back(i-1);
+  }
   for (int i = 0; i < cracked.size(); ++i){
     discont[cracked[i]] = 1;
     fn_elements[cracked[i]].edge = {NAN, 0.5, NAN, 0.5};
@@ -64,14 +60,14 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &co
   }
 }
 
-tmax = 0.03
-dt = 2e-2
-E = 1
-nu = 0
-rho = 1
-alpha = 0.05
-sy = 1
-ar_tol = 2.5e-4
+tmax = 1
+dt = 1e-7
+E = 2.07e11
+nu = 0.3
+rho = 7860
+alpha = 0
+sy = 6e8
+ar_tol = 1e-5
 rf = 2
 tc = 0.1
-sampling_rate = 100
+sampling_rate = 5

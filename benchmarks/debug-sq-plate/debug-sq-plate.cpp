@@ -39,3 +39,53 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements){
     fn_elements[cracked[i]].edge = {0.5, NAN, 0.5, NAN};
   }
 }
+
+void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &conn, map <pair<int,int>,double> &cparam){
+  vector <int> cracked;
+  for (int i = 2; i < 9; i+=3){
+    cracked.push_back(i-1);
+  }
+  for (int i = 0; i < cracked.size(); ++i){
+    discont[cracked[i]] = 1;
+    fn_elements[cracked[i]].edge = {0.5, NAN, 0.5, NAN};
+    VectorXi nodes = conn(cracked[i],all);
+    for(int j = 0; j < 4; ++j){
+      if(!isnan(fn_elements[cracked[i]].edge[j])){
+        if(cparam.find(make_pair(nodes(j),nodes((j+1)%4))) == cparam.end() && cparam.find(make_pair(nodes((j+1)%4),nodes(j))) == cparam.end()){
+          cparam[make_pair(nodes(j),nodes((j+1)%4))] = fn_elements[cracked[i]].edge[j];
+        }
+      }
+    }
+  }
+}
+
+void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &conn, map <pair<int,int>,double> &cparam){
+  vector <int> cracked;
+  for (int i = 2; i < 3; i+=3){
+    cracked.push_back(i-1);
+  }
+  for (int i = 0; i < cracked.size(); ++i){
+    discont[cracked[i]] = 1;
+    fn_elements[cracked[i]].edge = {0.5, NAN, 0.5, NAN};
+    VectorXi nodes = conn(cracked[i],all);
+    for(int j = 0; j < 4; ++j){
+      if(!isnan(fn_elements[cracked[i]].edge[j])){
+        if(cparam.find(make_pair(nodes(j),nodes((j+1)%4))) == cparam.end() && cparam.find(make_pair(nodes((j+1)%4),nodes(j))) == cparam.end()){
+          cparam[make_pair(nodes(j),nodes((j+1)%4))] = fn_elements[cracked[i]].edge[j];
+        }
+      }
+    }
+  }
+}
+
+tmax = 0.03
+dt = 0.02
+E = 1
+nu = 0
+rho = 1
+alpha = 0
+sy = 6e8
+ar_tol = 1e-8
+rf = 2
+tc = 0.1
+sampling_rate = 1
