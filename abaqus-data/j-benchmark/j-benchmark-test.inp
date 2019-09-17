@@ -10277,9 +10277,9 @@ Bottom, 2, 2
 ** Name: Left BC Type: Displacement/Rotation
 *Boundary
 Roller, 1, 1
-** Name: Top BC Type: Displacement/Rotation
-*Boundary
-Top, 2, 2, 0.001
+** Name: Top BC Type: Velocity/Angular velocity
+*Boundary, amplitude=Amp-1, type=VELOCITY
+Top, 2, 2, 0.0001
 ** 
 ** OUTPUT REQUESTS
 ** 
@@ -10295,6 +10295,6 @@ Top, 2, 2, 0.001
 ** 
 ** HISTORY OUTPUT: H-Output-2
 ** 
-*Contour Integral, crack name=H-Output-2_Crack-1, contours=5, crack tip nodes
+*Contour Integral, crack name=H-Output-2_Crack-1, contours=1, crack tip nodes
 _PickedSet12, _PickedSet13, 1., 0., 0.
 *End Step

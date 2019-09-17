@@ -6,8 +6,9 @@
 #include "crack_def-2.cpp"
 
 int main(int argc, char* argv[]){
-  double dt, tmax, E, nu, rho, alpha;
-  int sampling_rate, tc, rf, nlayers;
+  double dt, tmax, E, nu, rho, alpha, tc;
+  int srate, rf, nlyrs;
+  bool init_c = 1;
 
   // Creating a folder with time-stamp for saving data
   path.append(to_string((int)time(0)).append("/"));
@@ -25,7 +26,7 @@ int main(int argc, char* argv[]){
   int ndof = 2*nnod;
   int nelm = elements.rows();
 
-  if(!load_config(dt, tmax, E, nu, rho, alpha, sy, ar_tol, sampling_rate, tc, rf, nlayers)){
+  if(!load_config(dt, tmax, E, nu, rho, alpha, sy, ar_tol, tc, srate, rf, nlyrs, init_c)){
     cerr << "Couldn't open config file for reading." << endl;
     return 0;
   }
@@ -45,7 +46,7 @@ int main(int argc, char* argv[]){
   // boundary_conditions(vn,vn1);
   // boundary_conditions(un,un1,vn,vn1);
 
-  double t = 0, n = sampling_rate, ti = 0;
+  double t = 0, n = srate, ti = 0;
   bool crack_active = 1;
   while(t <= tmax){
     // cout << "Time: " << t << endl;
@@ -84,14 +85,14 @@ int main(int argc, char* argv[]){
     boundary_conditions(un,un1,vn,vn1,fg);
 
     // Define crack
-    if(abs(t-0) < 1e-5){
+    if(abs(t-0) < 1e-5 && init_c){
       cout << "Crack intialized" << endl;
       crack_def(discont,fn_elements, conn, cparam);
     }
 
     // Crack propagation
 
-    write_j("j_int.m",t,compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlayers));
+    // write_j("j_int.m",t,compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs));
 
     // if(crack_active){
     //   int c = stress_based_crack(discont, fn_elements, cparam, conn, x, un1, ndof, E, nu);
@@ -122,8 +123,8 @@ int main(int argc, char* argv[]){
     vector<vector<int> > fl_conn;
     MatrixXd conn_w;
     long s = 0;
-    if(n >= sampling_rate){
-      // write_j("j_int.m",t,compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlayers));
+    if(n >= srate){
+      // write_j("j_int.m",t,compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs));
       cout << "Time: " << t << endl;
 
       MatrixXd xdef = MatrixXd::Zero(ndof/2,3);
@@ -158,7 +159,7 @@ int main(int argc, char* argv[]){
           s+=4;
         }
       }
-      string filename = "x0";   filename.append(to_string((int)(t*1e8)));   filename.append(".vtk");
+      string filename = "x0";   filename.append(to_string((long long)(t*1e5)));   filename.append(".vtk");
       vtkwrite(filename,fl_conn,s,xdef,u,v,a,str,f);
       n = 1;
     }
@@ -168,7 +169,7 @@ int main(int argc, char* argv[]){
     if(cracked == 1){
       cracked = 2;
       dt/=rf;
-      sampling_rate = 5;
+      srate = 5;
     }
 
     t = t+dt;

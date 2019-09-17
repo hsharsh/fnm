@@ -87,10 +87,6 @@ double tri_j(MatrixXd &xv, VectorXd &u, VectorXd &lq, double E, double nu){
   MatrixXd dq = B0*lq;
 
   double w = 0.5*(stress(0)*strain(0) + stress(1)*strain(1) + 2*stress(2)*strain(2));
-      // cout << "lq: " <<  lq << endl << endl;
-  // cout << "Stress: " << stress << endl;
-  // cout << "du: " <<  du << endl;
-  // cout << "dq: " <<  dq << endl << endl;
   lj += ( (stress(0)*du(0)*dq(0) + stress(2)*du(2)*dq(0) + stress(2)*du(0)*dq(1) + stress(1)*du(2)*dq(1) ) - w*dq(0) )*area_elem;
 
   return lj;
@@ -154,7 +150,6 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
 
   }
 
-
   // for (set<int>::iterator it = domain_elem.begin(); it != domain_elem.end(); ++it){
   //   cout << *it << " ";
   // }
@@ -207,7 +202,7 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
       VectorXd u = un1(dof);
       VectorXd lq = q(nodes);
       // cout << "Element " << i << ":\n"<< lq << endl;
-      double temp = j_int;
+      // double temp = j_int;
       j_int += quad_j(xv, u, lq, E, nu);
       // cout << "Element " << i << ": "<< j_int-temp << endl;
 
@@ -225,7 +220,7 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
           VectorXd u = un1(dof);
           VectorXd lq = q(nodes);
           // cout << "Element " << i << "-subelement "<< j << ":\n" << lq << endl;
-          double temp = j_int;
+          // double temp = j_int;
           j_int += tri_j(xv, u, lq, E, nu);
           // cout << "Element " << i << "-subelement "<< j << ": " << j_int-temp << endl;
 
@@ -233,9 +228,5 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
       }
     }
   }
-
-
-
-  // cout << "J-integral: " << j_int << endl;
   return j_int;
 }

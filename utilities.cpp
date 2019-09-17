@@ -15,6 +15,8 @@
 
   vector<double> xgp = {-sqrt(3.0/5.0), 0, sqrt(3.0/5.0)};
   vector<double> wgp = {5.0/9.0, 8.0/9.0, 5.0/9.0};
+  // vector<double> xgp = {0};
+  // vector<double> wgp = {2};
   int ngp = wgp.size();
   double ar_tol,sy;
   int cracked = 0;
@@ -81,7 +83,7 @@
     cout << endl;
   }
 
-  bool load_config(double &dt, double &tmax, double &E, double &nu, double &rho, double &alpha, double &sy, double &ar_tol, int &sampling_rate, int &tc, int &rf, int &nlayers){
+  bool load_config(double &dt, double &tmax, double &E, double &nu, double &rho, double &alpha, double &sy, double &ar_tol, double &tc, int &srate, int &rf, int &nlayers, bool &init_c){
     ifstream cFile("parameters.cfg");
     if (cFile.is_open()){
         cout << "Running with parameters:" << endl;
@@ -110,14 +112,16 @@
           sy = stof(value);
         if(name == "ar_tol")
           ar_tol = stof(value);
-        if(name == "sampling_rate")
-          sampling_rate = stoi(value);
+        if(name == "srate")
+          srate = stoi(value);
         if(name == "tc")
           tc = stof(value);
         if(name == "rf")
           rf = stoi(value);
         if(name == "nlayers")
           nlayers = stoi(value);
+        if(name == "init_c")
+          init_c = stoi(value);
       }
       cout << endl;
       return 1;

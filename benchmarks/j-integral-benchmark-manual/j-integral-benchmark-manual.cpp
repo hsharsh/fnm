@@ -1,6 +1,5 @@
-#include "utilities.cpp"
-
-// Note that with 0-indexed arrays, first dof is node*(#dofs), next is node*(#dofs)+1, and so on
+// Boundary conditions for plate with a hole and streching on top and bottom
+// Activate only the boundary_conditions function. No temporary bc is needed
 void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn1, VectorXd &fg){
   double bcx, bcy;
   // Syntax: LinSpaced(#elements,start,end). Decrease the start and end by 1 (if taken from a 1-indexed mesh), to reflect 0-indexing
@@ -48,18 +47,15 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
   }
 }
 
-void temporary_bc(VectorXd &vn, VectorXd &vn1){
-  double bcx, bcy;
-  VectorXi left = VectorXi::LinSpaced(5,1,169);
-  left = left.array()-1;
-  bcx = 0.00866025;
-  bcy = 0.006;
-  for(int i=0; i < left.size();++i){
-    int node_bc = left(i);
-    int idof = node_bc*2;
-    vn(idof) = bcx;
-    vn(idof+1) = bcy;
-    vn1(idof) = bcx;
-    vn1(idof+1) = bcy;
-  }
-}
+tmax = 10
+dt = 0.02
+E = 1
+nu = 0
+rho = 1
+alpha = 0
+sy = 6e8
+ar_tol = 1e-8
+rf = 2
+tc = 0.1
+sampling_rate = 10
+init_c = 0
