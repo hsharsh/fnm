@@ -1720,15 +1720,15 @@
 *Solid Section, elset=Set-1, material=Test
 ,
 *End Part
-**  
+**
 **
 ** ASSEMBLY
 **
 *Assembly, name=Assembly
-**  
+**
 *Instance, name=SENT-1, part=Plate
 *End Instance
-**  
+**
 *Nset, nset=Bottom, instance=SENT-1, generate
   1,  21,   1
 *Elset, elset=Bottom, instance=SENT-1, generate
@@ -1742,9 +1742,9 @@
 *Elset, elset=Top, instance=SENT-1, generate
  801,  820,    1
 *End Assembly
-** 
+**
 ** MATERIALS
-** 
+**
 *Material, name="SENT specimen material"
 *Density
 7860.,
@@ -1756,17 +1756,15 @@
 *Elastic
 1.,0.
 ** ----------------------------------------------------------------
-** 
+**
 ** STEP: Step-1
-** 
-*Step, name=Step-1, nlgeom=YES
-*Dynamic, Explicit
-, 1.
-*Bulk Viscosity
-0.06, 1.2
-** 
+**
+*Step, name=Step-1, nlgeom=NO
+*Static
+0.02, 1., 1e-05, 0.02
+**
 ** BOUNDARY CONDITIONS
-** 
+**
 ** Name: Bottom BC Type: Displacement/Rotation
 *Boundary
 Bottom, 1, 1
@@ -1775,18 +1773,23 @@ Bottom, 2, 2
 *Boundary
 Roller, 1, 1
 ** Name: Top BC Type: Velocity/Angular velocity
-*Boundary, type=VELOCITY
-Top, 2, 2, 0.0005
-** 
+*Boundary, amplitude=Amp-1, type=VELOCITY
+Top, 2, 2, 0.0001
+**
 ** OUTPUT REQUESTS
-** 
+**
 *Restart, write, number interval=1, time marks=NO
-** 
+**
 ** FIELD OUTPUT: F-Output-1
-** 
-*Output, field, variable=PRESELECT
-** 
+**
+*Output, field, variable=PRESELECT, number interval=20, time marks=NO
+**
 ** HISTORY OUTPUT: H-Output-1
-** 
-*Output, history, variable=PRESELECT
+**
+*Output, history, variable=PRESELECT, number interval=200, time marks=NO
+**
+** HISTORY OUTPUT: H-Output-2
+**
+*Contour Integral, crack name=H-Output-2_Crack-1, contours=1, crack tip nodes
+_PickedSet12, _PickedSet13, 1., 0., 0.
 *End Step

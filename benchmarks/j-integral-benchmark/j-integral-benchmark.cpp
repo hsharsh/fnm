@@ -80,4 +80,6 @@ sy = 6e8
 ar_tol = 1e-8
 rf = 2
 tc = 0.1
-sampling_rate = 10
+srate = 10
+nlyrs = 2
+init_c = 1

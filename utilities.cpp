@@ -83,7 +83,7 @@
     cout << endl;
   }
 
-  bool load_config(double &dt, double &tmax, double &E, double &nu, double &rho, double &alpha, double &sy, double &ar_tol, double &tc, int &srate, int &rf, int &nlayers, bool &init_c){
+  bool load_config(double &tmax, double &dt, double &E, double &nu, double &rho, double &alpha, double &sy, double &ar_tol, double &tc, int &srate, int &rf, int &nlyrs, bool &init_c){
     ifstream cFile("parameters.cfg");
     if (cFile.is_open()){
         cout << "Running with parameters:" << endl;
@@ -118,8 +118,8 @@
           tc = stof(value);
         if(name == "rf")
           rf = stoi(value);
-        if(name == "nlayers")
-          nlayers = stoi(value);
+        if(name == "nlyrs")
+          nlyrs = stoi(value);
         if(name == "init_c")
           init_c = stoi(value);
       }

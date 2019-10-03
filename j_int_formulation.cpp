@@ -47,10 +47,8 @@ double quad_j(MatrixXd &xv, VectorXd &u, VectorXd &lq, double E, double nu){
       MatrixXd stress = D*strain;
       MatrixXd du = Bu*u;
       MatrixXd dq = jac.inverse()*B0*lq;
-
-      // cout << "lq: " <<  lq << endl << endl;
       double w = 0.5*(stress(0)*strain(0) + stress(1)*strain(1) + 2*stress(2)*strain(2));
-      lj += ( (stress(0)*du(0)*dq(0) + stress(2)*du(2)*dq(0) + stress(2)*du(0)*dq(1) + stress(1)*du(2)*dq(1) ) - w*dq(0) )*wgp[j]*wgp[k];
+      lj += ( (stress(0)*du(0)*dq(0) + stress(2)*du(2)*dq(0) + stress(2)*du(0)*dq(1) + stress(1)*du(2)*dq(1) ) - w*dq(0) )*wgp[j]*wgp[k]*jac.determinant();
     }
   }
   return lj;
@@ -93,10 +91,11 @@ double tri_j(MatrixXd &xv, VectorXd &u, VectorXd &lq, double E, double nu){
 }
 
 double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, VectorXd &un1, vector<int> &discont,map <int,element> &fn_elements, map <pair<int,int>,double> &cparam, int nnod, double E, double nu, int nlayers){
-  int tip_element = -1;
 
   double j_int = 0;
   int nelm = conn.rows();
+
+  int tip_element = -1;
   for(int i = 0; i < nelm; ++i){
     VectorXi nodes = conn(i,all);
     if(!discont[i]){
@@ -176,11 +175,24 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
     // cout << (*it)+1 << " ";
     if(discont[*it]){
       vector<vector<int> > lconn = fn_elements[*it].conn;
+      bool out = 0;
+
       for (int j = 0; j < lconn.size(); ++j){
         vector<int> nodes = lconn[j];
         for (int k = 0; k < nodes.size(); ++k){
-          if(nodes[k] >= nnod){
+          if(outer_nodes.count(nodes[k]) != 0)
+            out = 1;
+        }
+      }
+      for (int j = 0; j < lconn.size(); ++j){
+        vector<int> nodes = lconn[j];
+        for (int k = 0; k < nodes.size(); ++k){
+          if(nodes[k] >= nnod && !out){
             q(nodes[k]) = 1;
+
+          }
+          else if(nodes[k] >= nnod && out){
+            q(nodes[k]) = 0;
           }
         }
       }
@@ -202,6 +214,7 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
       VectorXd u = un1(dof);
       VectorXd lq = q(nodes);
       // cout << "Element " << i << ":\n"<< lq << endl;
+      // cout << "Element " << i << ": ";
       // double temp = j_int;
       j_int += quad_j(xv, u, lq, E, nu);
       // cout << "Element " << i << ": "<< j_int-temp << endl;
