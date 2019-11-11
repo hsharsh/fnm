@@ -72,3 +72,18 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
  rf = 2
  tc = 0.1
  nf = 100
+
+ tmax = 200
+ dt = 2e-2
+ E = 1
+ nu = 0
+ rho = 1
+ alpha = 0.05
+ sy = 100
+ ar_tol = 2.5e-4
+ rf = 2
+ tc = 0.1
+ srate = 10
+ nlyrs = 2
+ init_c = 1
+ j_tol = 1000

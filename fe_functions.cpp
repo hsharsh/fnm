@@ -42,11 +42,7 @@ void compute_properties(VectorXd &stress, vector<int> &discont, map <int,element
         MatrixXd B = B1*B2*B3;
         MatrixXd strain = B*u;
 
-        MatrixXd D(3,3);
-        D << 1-nu, 0, 0,
-              0, 1-nu, 0,
-              0, 0, (1-2*nu);
-        D = E/((1+nu)*(1-2*nu))*D.array();
+        MatrixXd D = constitutive(E, nu);
 
         VectorXd str = D*strain;
         // str_v[nodes(j)].push_back(str(1));
@@ -82,11 +78,7 @@ void compute_properties(VectorXd &stress, vector<int> &discont, map <int,element
           MatrixXd B = B1*B2;
           MatrixXd strain = B*u;
 
-          MatrixXd D(3,3);
-          D << 1-nu, 0, 0,
-                0, 1-nu, 0,
-                0, 0, (1-2*nu);
-          D = E/((1+nu)*(1-2*nu))*D.array();
+          MatrixXd D = constitutive(E, nu);
           MatrixXd str = D*strain;
           double str_mises = sqrt((pow(str(0)-str(1),2) + pow(str(0),2) + pow(str(1),2) + 6*(pow(str(2),2)))/2);
           for (int k = 0; k < 3; ++k)
@@ -122,11 +114,7 @@ MatrixXd tri_kl(MatrixXd &xv, double &area, double E, double nu){
 
   MatrixXd B = B1*B2;
 
-  MatrixXd D(3,3);
-  D << 1-nu, 0, 0,
-        0, 1-nu, 0,
-        0, 0, (1-2*nu);
-  D = E/((1+nu)*(1-2*nu))*D.array();
+  MatrixXd D = constitutive(E, nu);
 
   kl = kl + B.transpose()*D*B*area_elem;
   area += area_elem;
@@ -159,11 +147,7 @@ MatrixXd quad_kl(MatrixXd &xv, double &area, double E, double nu){
 
         MatrixXd B = B1*B2*B3;
 
-        MatrixXd D(3,3);
-        D << 1-nu, 0, 0,
-              0, 1-nu, 0,
-              0, 0, (1-2*nu);
-        D = E/((1+nu)*(1-2*nu))*D.array();
+        MatrixXd D = constitutive(E, nu);
 
         kl = kl + B.transpose()*D*B*jac.determinant() * wgp[i] * wgp[j];
         area += jac.determinant()* wgp[i] * wgp[j];
@@ -245,12 +229,14 @@ void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXi &conn, vector<int> &discont
   }
 }
 
-void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> &fn_elements, double E, double nu){
+void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> &fn_elements, vector<pair<double,double> > &matprop){
   double area = 0;
   int nelm = conn.rows();
 
   #pragma omp parallel for
   for(int i = 0; i < nelm; ++i){
+    double E = matprop[i].first;
+    double nu = matprop[i].second;
     if(!discont[i]){
       VectorXi nodes = conn(i,all);
       MatrixXd xv = x(nodes,all);

@@ -53,7 +53,36 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
    }
  }
 
-// dt=2e-2
-// tmax = 100
-// sy = 1.5e-3
-// ar_tol = 2e-5
+ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &conn, map <pair<int,int>,double> &cparam){
+   vector<int> cracked;
+   for(int i = 2511; i <= 2520; ++i)
+     cracked.push_back(i-1);
+   for (int i = 0; i < cracked.size(); ++i){
+     discont[cracked[i]] = 1;
+     fn_elements[cracked[i]].edge = {NAN, 0.9047, NAN, 0.0953};
+     VectorXi nodes = conn(cracked[i],all);
+     for(int j = 0; j < 4; ++j){
+       if(!isnan(fn_elements[cracked[i]].edge[j])){
+         if(cparam.find(make_pair(nodes(j),nodes((j+1)%4))) == cparam.end() && cparam.find(make_pair(nodes((j+1)%4),nodes(j))) == cparam.end()){
+           cparam[make_pair(nodes(j),nodes((j+1)%4))] = fn_elements[cracked[i]].edge[j];
+         }
+       }
+     }
+   }
+ }
+
+
+ tmax = 200
+ dt = 2e-2
+ E = 1
+ nu = 0
+ rho = 1
+ alpha = 0
+ sy = 100
+ ar_tol = 2.5e-3
+ rf = 2
+ tc = 0.1
+ srate = 10
+ nlyrs = 2
+ init_c = 1
+ j_tol = 1e-7

@@ -1,9 +1,10 @@
 #include "utilities.cpp"
+#include "materials.cpp"
 #include "fn_functions.cpp"
 #include "fe_functions.cpp"
 #include "bound_cond.cpp"
 #include "j_int_formulation.cpp"
-#include "crack_def-2.cpp"
+#include "crack_def.cpp"
 
 int main(int argc, char* argv[]){
   double dt, tmax, E, nu, rho, alpha, tc;
@@ -27,7 +28,7 @@ int main(int argc, char* argv[]){
   int ndof = 2*nnod;
   int nelm = elements.rows();
 
-  if(!load_config(tmax, dt, E, nu, rho, alpha, sy, ar_tol, tc, srate, rf, nlyrs, init_c)){
+  if(!load_config(tmax, dt, E, nu, rho, alpha, sy, ar_tol, tc, j_tol, srate, rf, nlyrs, init_c)){
     cerr << "Couldn't open config file for reading." << endl;
     return 0;
   }
@@ -44,6 +45,9 @@ int main(int argc, char* argv[]){
   vector<int> discont(nnod,0);
   map <int,element> fn_elements;
   map <pair<int,int>,double> cparam;
+  vector<pair<double,double> > matprop(nelm);
+
+  setproperties(matprop, E, nu);
   // boundary_conditions(vn,vn1);
   // boundary_conditions(un,un1,vn,vn1);
 
@@ -60,7 +64,7 @@ int main(int argc, char* argv[]){
 
 
     // Linearized Global Stiffness matrix assembly
-    assemble_fi(fi, un, x, conn, discont, fn_elements, E, nu);
+    assemble_fi(fi, un, x, conn, discont, fn_elements, matprop);
 
     // Linearized Global Mass matrix assembly
     assemble_mg(mg, x, conn, discont, fn_elements, rho, ndof);
@@ -122,22 +126,22 @@ int main(int argc, char* argv[]){
 
     // Crack propagation
 
-    // write_j("j_int.m",t,compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs));
+    if(crack_active){
+      double j_integral = abs(compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs));
+      int c = j_based_crack(discont, neighbours, fn_elements, cparam, conn, x, un1, ndof, E, nu, j_integral, nlyrs);
+      if (c == 1){
+        crack_active = 0;
+      }
+    }
 
-    // if(crack_active){
-    //   int c = stress_based_crack(discont, fn_elements, cparam, conn, x, un1, ndof, E, nu);
-    //   if (c == 1){
-    //     crack_active = 0;
-    //   }
-    // }
-    // else{
-    //   if(ti < tc)
-    //     ti+=dt;
-    //   else{
-    //     ti = 0;
-    //     crack_active = 1;
-    //   }
-    // }
+    if(!crack_active){
+      if(ti < tc)
+        ti+=dt;
+      else{
+        ti = 0;
+        crack_active = 1;
+      }
+    }
 
 
     // Add floating nodes to the global matrices
@@ -199,7 +203,7 @@ int main(int argc, char* argv[]){
     if(cracked == 1){
       cracked = 2;
       dt/=rf;
-      srate = 5;
+      srate = 1;
     }
 
     t = t+dt;

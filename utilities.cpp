@@ -13,13 +13,16 @@
   #define pi 			3.141592653593
   #define eps 		0.0000001
 
+  // Parameters
+
   vector<double> xgp = {-sqrt(3.0/5.0), 0, sqrt(3.0/5.0)};
   vector<double> wgp = {5.0/9.0, 8.0/9.0, 5.0/9.0};
   // vector<double> xgp = {0};
   // vector<double> wgp = {2};
   int ngp = wgp.size();
-  double ar_tol,sy;
+  double ar_tol,sy, j_tol;
   int cracked = 0;
+
   string path = "/home/hsharsh/fnm/data";
 
   // Reading CSV files into an Eigen MatrixXd variable
@@ -83,45 +86,51 @@
     cout << endl;
   }
 
-  bool load_config(double &tmax, double &dt, double &E, double &nu, double &rho, double &alpha, double &sy, double &ar_tol, double &tc, int &srate, int &rf, int &nlyrs, bool &init_c){
+  bool load_config(double &tmax, double &dt, double &E, double &nu, double &rho, double &alpha, double &sy, double &ar_tol, double &tc, double &j_tol, int &srate, int &rf, int &nlyrs, bool &init_c){
     ifstream cFile("parameters.cfg");
+    string p = path;
+    p.append("parameters.cfg");
+    ofstream writer(p,ofstream::out);
     if (cFile.is_open()){
         cout << "Running with parameters:" << endl;
         string line;
         while(getline(cFile, line)){
-        line.erase(remove_if(line.begin(), line.end(), ::isspace),line.end());
-        if(line[0] == '#' || line.empty())
-          continue;
-        auto delimiterPos = line.find("=");
-        string name = line.substr(0, delimiterPos);
-        string value = line.substr(delimiterPos + 1);
-        cout << name << ":\t" << value << endl;
-        if(name == "dt")
-          dt = stof(value);
-        if(name == "tmax")
-          tmax = stof(value);
-        if(name == "E")
-          E = stof(value);
-        if(name == "nu")
-          nu = stof(value);
-        if(name == "rho")
-          rho = stof(value);
-        if(name == "alpha")
-          alpha = stof(value);
-        if(name == "sy")
-          sy = stof(value);
-        if(name == "ar_tol")
-          ar_tol = stof(value);
-        if(name == "srate")
-          srate = stoi(value);
-        if(name == "tc")
-          tc = stof(value);
-        if(name == "rf")
-          rf = stoi(value);
-        if(name == "nlyrs")
-          nlyrs = stoi(value);
-        if(name == "init_c")
-          init_c = stoi(value);
+          writer << line << endl;
+          line.erase(remove_if(line.begin(), line.end(), ::isspace),line.end());
+          if(line[0] == '#' || line.empty())
+            continue;
+          auto delimiterPos = line.find("=");
+          string name = line.substr(0, delimiterPos);
+          string value = line.substr(delimiterPos + 1);
+          cout << name << ":\t" << value << endl;
+          if(name == "dt")
+            dt = stof(value);
+          if(name == "tmax")
+            tmax = stof(value);
+          if(name == "E")
+            E = stof(value);
+          if(name == "nu")
+            nu = stof(value);
+          if(name == "rho")
+            rho = stof(value);
+          if(name == "alpha")
+            alpha = stof(value);
+          if(name == "sy")
+            sy = stof(value);
+          if(name == "ar_tol")
+            ar_tol = stof(value);
+          if(name == "tc")
+            tc = stof(value);
+          if(name == "j_tol")
+            j_tol = stof(value);
+          if(name == "srate")
+            srate = stoi(value);
+          if(name == "rf")
+            rf = stoi(value);
+          if(name == "nlyrs")
+            nlyrs = stoi(value);
+          if(name == "init_c")
+            init_c = stoi(value);
       }
       cout << endl;
       return 1;

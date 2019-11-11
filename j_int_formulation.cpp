@@ -10,17 +10,25 @@ void compute_neighbours(vector<vector<int> > &neighbours, MatrixXi &conn){
     }
 }
 
-double quad_j(MatrixXd &xv, VectorXd &u, VectorXd &lq, double E, double nu){
+double quad_j(MatrixXd &xv, VectorXd &u, VectorXd &lq, double E, double nu, pair<double,double> direction){
   double lj = 0;
   for (int j = 0; j < ngp; ++j){
     for (int k = 0; k < ngp; ++k){
       double r = xgp[j], s =  xgp[k];
-      MatrixXd B0(2,4), jac(2,2), B1(3,4), B2 = MatrixXd::Zero(4,4), B3 = MatrixXd::Zero(4,8);
+      MatrixXd B0(2,4), jac(2,2), jacr(2,2), B1(3,4), B2 = MatrixXd::Zero(4,4), Br = MatrixXd::Zero(4,4), B3 = MatrixXd::Zero(4,8);
 
       B0 << -(1-s)/4,  (1-s)/4, (1+s)/4, -(1+s)/4,
             -(1-r)/4,  -(1+r)/4,  (1+r)/4,  (1-r)/4;
 
       jac = (B0*xv);
+
+      double ct = direction.first/sqrt(pow(direction.first,2)+pow(direction.second,2));
+      double st = direction.second/sqrt(pow(direction.first,2)+pow(direction.second,2));
+
+      jacr << ct, st,
+              -st, ct;
+      Br(seq(0,1),seq(0,1)) = jacr;
+      Br(seq(2,3),seq(2,3)) = jacr;
 
       B1 << 1, 0, 0, 0,
             0, 0, 0, 1,
@@ -33,20 +41,17 @@ double quad_j(MatrixXd &xv, VectorXd &u, VectorXd &lq, double E, double nu){
       B3(seq(0,1),seq(0,last,2)) = B0;
       B3(seq(2,3),seq(1,last,2)) = B0;
 
-      MatrixXd Bu = B2*B3;
+      MatrixXd Bu = Br*B2*B3;
+      MatrixXd Bj = jacr*jac.inverse()*B0;
       MatrixXd B = B1*Bu;
 
       MatrixXd strain = B*u;
 
-      MatrixXd D(3,3);
-      D << 1-nu, 0, 0,
-            0, 1-nu, 0,
-            0, 0, (1-2*nu);
-      D = E/((1+nu)*(1-2*nu))*D.array();
+      MatrixXd D = constitutive(E, nu);
 
       MatrixXd stress = D*strain;
       MatrixXd du = Bu*u;
-      MatrixXd dq = jac.inverse()*B0*lq;
+      MatrixXd dq = Bj*lq;
       double w = 0.5*(stress(0)*strain(0) + stress(1)*strain(1) + 2*stress(2)*strain(2));
       lj += ( (stress(0)*du(0)*dq(0) + stress(2)*du(2)*dq(0) + stress(2)*du(0)*dq(1) + stress(1)*du(2)*dq(1) ) - w*dq(0) )*wgp[j]*wgp[k]*jac.determinant();
     }
@@ -54,14 +59,23 @@ double quad_j(MatrixXd &xv, VectorXd &u, VectorXd &lq, double E, double nu){
   return lj;
 }
 
-double tri_j(MatrixXd &xv, VectorXd &u, VectorXd &lq, double E, double nu){
+double tri_j(MatrixXd &xv, VectorXd &u, VectorXd &lq, double E, double nu, pair<double,double> direction){
   double lj = 0;
 
   double area_elem = 0.5*(xv(0,0)*xv(1,1)-xv(1,0)*xv(0,1) + xv(1,0)*xv(2,1)-xv(2,0)*xv(1,1) + xv(2,0)*xv(0,1)-xv(0,0)*xv(2,1));
-  MatrixXd B0(2,3), B2 = MatrixXd::Zero(4,6), B1(3,4);
+  MatrixXd B0(2,3), jacr(2,2), B2 = MatrixXd::Zero(4,6), B1(3,4), Br = MatrixXd::Zero(4,4);
   B0 << xv(1,1)-xv(2,1), xv(2,1)-xv(0,1), xv(0,1)-xv(1,1),
           xv(2,0)-xv(1,0), xv(0,0)-xv(2,0), xv(1,0)-xv(0,0);
   B0 = B0.array()/(2*area_elem);
+
+  double ct = direction.first/sqrt(pow(direction.first,2)+pow(direction.second,2));
+  double st = direction.second/sqrt(pow(direction.first,2)+pow(direction.second,2));
+
+  jacr << ct, st,
+          -st, ct;
+
+  Br(seq(0,1),seq(0,1)) = jacr;
+  Br(seq(2,3),seq(2,3)) = jacr;
 
   B1 << 1, 0, 0, 0,
         0, 0, 0, 1,
@@ -74,15 +88,11 @@ double tri_j(MatrixXd &xv, VectorXd &u, VectorXd &lq, double E, double nu){
 
   MatrixXd strain = B*u;
 
-  MatrixXd D(3,3);
-  D << 1-nu, 0, 0,
-        0, 1-nu, 0,
-        0, 0, (1-2*nu);
-  D = E/((1+nu)*(1-2*nu))*D.array();
+  MatrixXd D = constitutive(E, nu);
 
   MatrixXd stress = D*strain;
-  MatrixXd du = B2*u;
-  MatrixXd dq = B0*lq;
+  MatrixXd du = Br*B2*u;
+  MatrixXd dq = jacr*B0*lq;
 
   double w = 0.5*(stress(0)*strain(0) + stress(1)*strain(1) + 2*stress(2)*strain(2));
   lj += ( (stress(0)*du(0)*dq(0) + stress(2)*du(2)*dq(0) + stress(2)*du(0)*dq(1) + stress(1)*du(2)*dq(1) ) - w*dq(0) )*area_elem;
@@ -110,10 +120,13 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
     }
   }
 
+  // pair<double,double> direction = make_pair(0.866025,-0.5);
+  pair<double,double> direction = make_pair(1,0);
+
   // cout << "NN element -> " << tip_element << endl;
   if(tip_element == -1){
-    cerr << "Crack tip is indeterminate. J-intergral not computed" << endl;
-    return j_int;
+    // cerr << "Crack tip is indeterminate. J-intergral not computed" << endl;
+    return -1;
   }
 
   set<int> domain_elem, inner_nodes, outer_nodes;
@@ -125,7 +138,7 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
 
   // Loop for adding layers
   for (int ni = 0; ni < nlayers; ++ni){
-    // Insert all the neighbours of inner_nodes to domain_elem
+    // Insert all the neighbours of outer_nodes to domain_elem
     for (set<int>::iterator it = outer_nodes.begin(); it != outer_nodes.end(); ++it){
       for (int k = 0; k < neighbours[*it].size(); ++k){
         domain_elem.insert(neighbours[*it][k]);
@@ -199,6 +212,45 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
     }
   }
 
+  vector<double> xpos,ypos;
+  for (set<int>::iterator it = domain_elem.begin(); it != domain_elem.end(); ++it){
+    if(discont[*it]){
+      vector<vector<int> > lconn = fn_elements[*it].conn;
+      bool out = 0;
+
+      for (int j = 0; j < lconn.size(); ++j){
+        vector<int> nodes = lconn[j];
+        for (int k = 0; k < nodes.size(); ++k){
+          if(nodes[k] >= nnod){
+            q(nodes[k]) = 1;
+            xpos.push_back(x(nodes[k],0));
+            ypos.push_back(x(nodes[k],1));
+          }
+        }
+      }
+    }
+  }
+  // print(xpos);
+  // print(ypos);
+
+  double sy = 0, sx = 0, sxx = 0, sxy = 0;
+  int n = xpos.size();
+  for (int i = 0; i < n; i++){
+    sx += xpos[i];
+    sy += ypos[i];
+    sxx += xpos[i]*xpos[i];
+    sxy += xpos[i]*ypos[i];
+  }
+
+  if(n*sxx-sx*sx == 0){
+    direction = make_pair(0,1);
+  }
+  else{
+    double m = (n*sxy-sx*sy)/(n*sxx-sx*sx);
+    direction = make_pair(1/sqrt(1+m*m),m/sqrt(1+m*m));
+  }
+  // cout << direction.first << " " << direction.second << endl;
+
   // cout << "\nQ-vector: " << endl;
   // cout << q << endl;
   for (set<int>::iterator it = domain_elem.begin(); it != domain_elem.end(); ++it){
@@ -216,7 +268,7 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
       // cout << "Element " << i << ":\n"<< lq << endl;
       // cout << "Element " << i << ": ";
       // double temp = j_int;
-      j_int += quad_j(xv, u, lq, E, nu);
+      j_int += quad_j(xv, u, lq, E, nu, direction);
       // cout << "Element " << i << ": "<< j_int-temp << endl;
 
     }
@@ -234,7 +286,7 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
           VectorXd lq = q(nodes);
           // cout << "Element " << i << "-subelement "<< j << ":\n" << lq << endl;
           // double temp = j_int;
-          j_int += tri_j(xv, u, lq, E, nu);
+          j_int += tri_j(xv, u, lq, E, nu, direction);
           // cout << "Element " << i << "-subelement "<< j << ": " << j_int-temp << endl;
 
         }
