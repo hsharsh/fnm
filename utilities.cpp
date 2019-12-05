@@ -20,10 +20,14 @@
   // vector<double> xgp = {0};
   // vector<double> wgp = {2};
   int ngp = wgp.size();
-  double ar_tol,sy, j_tol;
+  double ar_tol,sy, j_tol, delta, smax, ashear;
   int cracked = 0;
 
   string path = "/home/hsharsh/fnm/data";
+
+  template <typename T> int sgn(T val) {
+      return (T(0) < val) - (val < T(0));
+  }
 
   // Reading CSV files into an Eigen MatrixXd variable
   template<typename M, typename type>
@@ -86,7 +90,7 @@
     cout << endl;
   }
 
-  bool load_config(double &tmax, double &dt, double &E, double &nu, double &rho, double &alpha, double &sy, double &ar_tol, double &tc, double &j_tol, int &srate, int &rf, int &nlyrs, bool &init_c){
+  bool load_config(double &tmax, double &dt, double &E, double &nu, double &rho, double &alpha, double &sy, double &ar_tol, double &tc, double &j_tol, double &delta, double &smax, double &ashear, int &srate, int &rf, int &nlyrs, bool &init_c){
     ifstream cFile("parameters.cfg");
     string p = path;
     p.append("parameters.cfg");
@@ -123,6 +127,12 @@
             tc = stof(value);
           if(name == "j_tol")
             j_tol = stof(value);
+          if(name == "delta")
+            delta = stof(value);
+          if(name == "smax")
+            smax = stof(value);
+          if(name == "ashear")
+            ashear = stof(value);
           if(name == "srate")
             srate = stoi(value);
           if(name == "rf")

@@ -1,6 +1,7 @@
 #include "utilities.cpp"
 #include "materials.cpp"
 #include "fn_functions.cpp"
+#include "cze.cpp"
 #include "fe_functions.cpp"
 #include "bound_cond.cpp"
 #include "j_int_formulation.cpp"
@@ -28,7 +29,7 @@ int main(int argc, char* argv[]){
   int ndof = 2*nnod;
   int nelm = elements.rows();
 
-  if(!load_config(tmax, dt, E, nu, rho, alpha, sy, ar_tol, tc, j_tol, srate, rf, nlyrs, init_c)){
+  if(!load_config(tmax, dt, E, nu, rho, alpha, sy, ar_tol, tc, j_tol, delta, smax, ashear, srate, rf, nlyrs, init_c)){
     cerr << "Couldn't open config file for reading." << endl;
     return 0;
   }
@@ -46,8 +47,11 @@ int main(int argc, char* argv[]){
   map <int,element> fn_elements;
   map <pair<int,int>,double> cparam;
   vector<pair<double,double> > matprop(nelm);
+  vector<pair<int,int> > cze(nelm);
 
   setproperties(matprop, E, nu);
+
+  setcze(cze);
   // boundary_conditions(vn,vn1);
   // boundary_conditions(un,un1,vn,vn1);
 
@@ -64,13 +68,13 @@ int main(int argc, char* argv[]){
 
 
     // Linearized Global Stiffness matrix assembly
-    assemble_fi(fi, un, x, conn, discont, fn_elements, matprop);
+    assemble_fi(fi, un, x, conn, discont, fn_elements, matprop, cze);
 
     // Linearized Global Mass matrix assembly
-    assemble_mg(mg, x, conn, discont, fn_elements, rho, ndof);
+    assemble_mg(mg, x, conn, discont, fn_elements, cze, rho, ndof);
 
     // Linearized Global damping matrix
-    assemble_lcg(lcg, vn, x, conn, discont, fn_elements, rho, alpha);
+    assemble_lcg(lcg, vn, x, conn, discont, fn_elements, cze, rho, alpha);
 
     // BC for fg
     boundary_conditions(un,un1,vn,vn1,fg);
@@ -151,12 +155,14 @@ int main(int argc, char* argv[]){
     remove_singular_elements(fn_elements,x);
 
     // Compute nodal properties
-    compute_properties(stress, discont, fn_elements, conn, x, un1, ndof, E, nu);
+    compute_properties(stress, discont, fn_elements, conn, x, un1, ndof, E, nu, cze);
 
     // File writing operations
     vector<vector<int> > fl_conn;
     MatrixXd conn_w;
     long s = 0;
+    // cout << "x: " << endl;
+    // cout << x(seq(1,ndof/2),all) << endl << endl;
     if(n >= srate){
       write_j("j_int.m",t,compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs));
       cout << "Time: " << t << endl;
@@ -176,11 +182,14 @@ int main(int argc, char* argv[]){
       f(all,0) = fi(seq(0,ndof-1,2));     f(all,1) = fi(seq(1,ndof-1,2));
 
       for (int i = 0; i < nelm; ++i){
+        if(cze[i].first == 2){
+          continue;
+        }
         if(discont[i]){
           for(int j = 0; j < fn_elements[i].conn.size(); ++j){
             if(fn_elements[i].active[j]){
               fl_conn.push_back(fn_elements[i].conn[j]);
-              s+=3;
+              s+=fn_elements[i].conn[j].size();
             }
           }
         }

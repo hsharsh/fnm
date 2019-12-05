@@ -274,23 +274,46 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
     }
     else{
       vector<vector<int> > lconn = fn_elements[i].conn;
-      for (int j = 0; j < lconn.size(); ++j){
-        if(fn_elements[i].active[j]){
-          vector<int> nodes = lconn[j];
-          MatrixXd xv = x(nodes,all);
+      if(lconn.size() == 3){
+        for (int j = 0; j < lconn.size(); ++j){
+          if(fn_elements[i].active[j]){
+            vector<int> nodes = lconn[j];
+            MatrixXd xv = x(nodes,all);
 
-          vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
-                              nodes[1]*2, nodes[1]*2+1,
-                              nodes[2]*2, nodes[2]*2+1};
-          VectorXd u = un1(dof);
-          VectorXd lq = q(nodes);
-          // cout << "Element " << i << "-subelement "<< j << ":\n" << lq << endl;
-          // double temp = j_int;
-          j_int += tri_j(xv, u, lq, E, nu, direction);
-          // cout << "Element " << i << "-subelement "<< j << ": " << j_int-temp << endl;
+            vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
+                                nodes[1]*2, nodes[1]*2+1,
+                                nodes[2]*2, nodes[2]*2+1,
+                                nodes[3]*2, nodes[3]*2+1};
+            VectorXd u = un1(dof);
+            VectorXd lq = q(nodes);
+            // cout << "Element " << i << "-subelement "<< j << ":\n" << lq << endl;
+            // double temp = j_int;
+            j_int += quad_j(xv, u, lq, E, nu, direction);
+            // cout << "Element " << i << "-subelement "<< j << ": " << j_int-temp << endl;
 
+          }
         }
       }
+      else{
+        for (int j = 0; j < lconn.size(); ++j){
+          if(fn_elements[i].active[j]){
+            vector<int> nodes = lconn[j];
+            MatrixXd xv = x(nodes,all);
+
+            vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
+                                nodes[1]*2, nodes[1]*2+1,
+                                nodes[2]*2, nodes[2]*2+1};
+            VectorXd u = un1(dof);
+            VectorXd lq = q(nodes);
+            // cout << "Element " << i << "-subelement "<< j << ":\n" << lq << endl;
+            // double temp = j_int;
+            j_int += tri_j(xv, u, lq, E, nu, direction);
+            // cout << "Element " << i << "-subelement "<< j << ": " << j_int-temp << endl;
+
+          }
+        }
+      }
+
     }
   }
   return j_int;
