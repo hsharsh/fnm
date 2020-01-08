@@ -78,6 +78,25 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &co
   }
 }
 
+void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &conn, map <pair<int,int>,double> &cparam){
+  vector <int> cracked{1};
+  for (int i = 0; i < cracked.size(); ++i){
+    discont[cracked[i]] = 3;
+    fn_elements[cracked[i]].edge = {0.5, NAN, -0.5, NAN};
+    VectorXi nodes = conn(cracked[i],all);
+    for(int j = 0; j < 4; ++j){
+      if(!isnan(fn_elements[cracked[i]].edge[j])){
+        if(cparam.find(make_pair(nodes(j),nodes((j+1)%4))) == cparam.end() && cparam.find(make_pair(nodes((j+1)%4),nodes(j))) == cparam.end()){
+          cparam[make_pair(nodes(j),nodes((j+1)%4))] = abs(fn_elements[cracked[i]].edge[j]);
+        }
+      }
+    }
+  }
+
+  // Transition element
+  discont[4] = 4;
+}
+
 tmax = 0.03
 dt = 0.02
 E = 1

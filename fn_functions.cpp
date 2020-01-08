@@ -71,7 +71,7 @@ inline double disp_interpolation(double u1, double u2, double e){
 inline double distance(VectorXd x1, VectorXd x2){
   return sqrt(pow(x1(0)-x2(0),2)+pow(x1(1)-x2(1),2));
 }
-void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof){
+void partition(element &elem, int lmn, MatrixXi &conn, map <pair<int,int>,pair<int,int> > &allocated_nodes, MatrixXd &x, VectorXd &un1, int &ndof){
   VectorXi nodes = conn(lmn,all);
   MatrixXd xv = x(nodes,all);
   MatrixXd ux = un1(nodes.array()*2);
@@ -86,25 +86,50 @@ void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, VectorXd &un
         break;
     }
     start = (start+1)%4;
-    x(nnod,all) = point_interpolation(xv(start,all),xv((start+1)%4,all),elem.edge[start]);
-    x(nnod+1,all) = x(nnod,all);
-    un1(ndof) = disp_interpolation(ux(start),ux((start+1)%4),elem.edge[start]);
-    un1(ndof+1) = disp_interpolation(uy(start),uy((start+1)%4),elem.edge[start]);
-    un1(ndof+2) = un1(ndof);
-    un1(ndof+3) = un1(ndof+1);
 
-    x(nnod+2,all) = point_interpolation(xv((start+3)%4,all),xv(start,all),elem.edge[(start+3)%4]);
-    x(nnod+3,all) = x(nnod+2,all);
+    vector<int> old_nodes{start,(start+1)%4,(start+2)%4,(start+3)%4};
+    vector<int> fl_nodes{nnod,nnod+1,nnod+2,nnod+3};
 
-    un1(ndof+4) = disp_interpolation(ux((start+3)%4),ux(start),elem.edge[(start+3)%4]);
-    un1(ndof+5) = disp_interpolation(uy((start+3)%4),uy(start),elem.edge[(start+3)%4]);
-    un1(ndof+6) = un1(ndof+4);
-    un1(ndof+7) = un1(ndof+5);
+    // Code to change the nodes assigned
+    if(allocated_nodes.find(make_pair(nodes(old_nodes[0]),nodes(old_nodes[1]))) != allocated_nodes.end()){
+      fl_nodes[0] = allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[1]))].first;
+      fl_nodes[1] = allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[1]))].second;
+    }
+    else{
+      allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[1]))] = make_pair(fl_nodes[0],fl_nodes[1]);
+      allocated_nodes[make_pair(nodes(old_nodes[1]),nodes(old_nodes[0]))] = make_pair(fl_nodes[1],fl_nodes[0]);
+    }
 
-    elem.conn.push_back({nodes(start), nnod , nnod+3});
-    elem.conn.push_back({nnod+1, nodes((start+1)%4), nodes((start+2)%4)});
-    elem.conn.push_back({nnod+1, nodes((start+2)%4), nnod+2});
-    elem.conn.push_back({nnod+2, nodes((start+2)%4), nodes((start+3)%4)});
+    if(allocated_nodes.find(make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))) != allocated_nodes.end()){
+      fl_nodes[2] = allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))].first;
+      fl_nodes[3] = allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))].second;
+    }
+    else{
+      allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))] = make_pair(fl_nodes[2],fl_nodes[3]);
+      allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[3]))] = make_pair(fl_nodes[3],fl_nodes[2]);
+    }
+
+
+    x(fl_nodes[0],all) = point_interpolation(xv(old_nodes[0],all),xv(old_nodes[1],all),elem.edge[old_nodes[0]]);
+    x(fl_nodes[1],all) = x(fl_nodes[0],all);
+
+    un1(fl_nodes[0]*2) = disp_interpolation(ux(old_nodes[0]),ux(old_nodes[1]),elem.edge[start]);
+    un1(fl_nodes[0]*2+1) = disp_interpolation(uy(old_nodes[0]),uy(old_nodes[1]),elem.edge[start]);
+    un1(fl_nodes[1]*2) = un1(fl_nodes[0]*2);
+    un1(fl_nodes[1]*2+1) = un1(fl_nodes[0]*2+1);
+
+    x(fl_nodes[2],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]);
+    x(fl_nodes[3],all) = x(fl_nodes[2],all);
+
+    un1(fl_nodes[2]*2) = disp_interpolation(ux(old_nodes[3]),ux(old_nodes[0]),elem.edge[old_nodes[3]]);
+    un1(fl_nodes[2]*2+1) = disp_interpolation(uy(old_nodes[3]),uy(old_nodes[0]),elem.edge[old_nodes[3]]);
+    un1(fl_nodes[3]*2) = un1(fl_nodes[2]*2);
+    un1(fl_nodes[3]*2+1) = un1(fl_nodes[2]*2+1);
+
+    elem.conn.push_back({nodes(old_nodes[0]), fl_nodes[0] , fl_nodes[3]});
+    elem.conn.push_back({fl_nodes[1], nodes(old_nodes[1]), nodes(old_nodes[2])});
+    elem.conn.push_back({fl_nodes[1], nodes(old_nodes[2]), fl_nodes[2]});
+    elem.conn.push_back({fl_nodes[2], nodes(old_nodes[2]), nodes(old_nodes[3])});
 
     elem.active = {1,1,1,1};
 
@@ -116,105 +141,292 @@ void partition(element &elem, int lmn, MatrixXi &conn, MatrixXd &x, VectorXd &un
       start = 1;
     }
 
-    x(nnod,all) = point_interpolation(xv((start+1)%4,all),xv((start+2)%4,all),elem.edge[(start+1)%4]);
-    x(nnod+1,all) = x(nnod,all);
-    un1(ndof) = disp_interpolation(ux((start+1)%4),ux((start+2)%4),elem.edge[(start+1)%4]);
-    un1(ndof+1) = disp_interpolation(uy((start+1)%4),uy((start+2)%4),elem.edge[(start+1)%4]);
-    un1(ndof+2) = un1(ndof);
-    un1(ndof+3) = un1(ndof+1);
+    vector<int> old_nodes{start,(start+1)%4,(start+2)%4,(start+3)%4};
+    vector<int> fl_nodes{nnod,nnod+1,nnod+2,nnod+3};
 
-    x(nnod+2,all) = point_interpolation(xv((start+3)%4,all),xv(start,all),elem.edge[(start+3)%4]);
-    x(nnod+3,all) = x(nnod+2,all);
-    un1(ndof+4) = disp_interpolation(ux((start+3)%4),ux(start),elem.edge[(start+3)%4]);
-    un1(ndof+5) = disp_interpolation(uy((start+3)%4),uy(start),elem.edge[(start+3)%4]);
-    un1(ndof+6) = un1(ndof+4);
-    un1(ndof+7) = un1(ndof+5);
-
-    if(distance(xv(start,all),x(nnod,all)) < distance(x(nnod+3,all),xv((start+1)%4,all))){
-      elem.conn.push_back({nodes(start), nodes((start+1)%4), nnod});
-      elem.conn.push_back({nnod, nnod+3, nodes(start)});
+    // Code to change the nodes assigned
+    if(allocated_nodes.find(make_pair(nodes(old_nodes[1]),nodes(old_nodes[2]))) != allocated_nodes.end()){
+      fl_nodes[0] = allocated_nodes[make_pair(nodes(old_nodes[1]),nodes(old_nodes[2]))].first;
+      fl_nodes[1] = allocated_nodes[make_pair(nodes(old_nodes[1]),nodes(old_nodes[2]))].second;
     }
     else{
-      elem.conn.push_back({nodes(start), nodes((start+1)%4), nnod+3});
-      elem.conn.push_back({nodes((start+1)%4), nnod, nnod+3});
+      allocated_nodes[make_pair(nodes(old_nodes[1]),nodes(old_nodes[2]))] = make_pair(fl_nodes[0],fl_nodes[1]);
+      allocated_nodes[make_pair(nodes(old_nodes[2]),nodes(old_nodes[1]))] = make_pair(fl_nodes[1],fl_nodes[0]);
     }
 
-    if(distance(x(nnod+2,all),xv((start+2)%4,all)) < distance(xv((start+3)%4,all),x(nnod+1,all))){
-      elem.conn.push_back({nnod+2, nnod+1, nodes((start+2)%4)});
-      elem.conn.push_back({nodes((start+2)%4), nodes((start+3)%4), nnod+2});
+    if(allocated_nodes.find(make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))) != allocated_nodes.end()){
+      fl_nodes[2] = allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))].first;
+      fl_nodes[3] = allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))].second;
     }
     else{
-      elem.conn.push_back({nnod+2, nnod+1, nodes((start+3)%4)});
-      elem.conn.push_back({nnod+1, nodes((start+2)%4), nodes((start+3)%4)});
+      allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))] = make_pair(fl_nodes[2],fl_nodes[3]);
+      allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[3]))] = make_pair(fl_nodes[3],fl_nodes[2]);
+    }
+
+
+    x(fl_nodes[0],all) = point_interpolation(xv(old_nodes[1],all),xv(old_nodes[2],all),elem.edge[old_nodes[1]]);
+    x(fl_nodes[1],all) = x(fl_nodes[0],all);
+    un1(fl_nodes[0]*2) = disp_interpolation(ux(old_nodes[1]),ux(old_nodes[2]),elem.edge[old_nodes[1]]);
+    un1(fl_nodes[0]*2+1) = disp_interpolation(uy(old_nodes[1]),uy(old_nodes[2]),elem.edge[old_nodes[1]]);
+    un1(fl_nodes[1]*2) = un1(fl_nodes[0]*2);
+    un1(fl_nodes[1]*2+1) = un1(fl_nodes[0]*2+1);
+
+    x(fl_nodes[2],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]);
+    x(fl_nodes[3],all) = x(fl_nodes[2],all);
+    un1(fl_nodes[2]*2) = disp_interpolation(ux(old_nodes[3]),ux(old_nodes[0]),elem.edge[old_nodes[3]]);
+    un1(fl_nodes[2]*2+1) = disp_interpolation(uy((old_nodes[3])%4),uy(old_nodes[0]),elem.edge[old_nodes[3]]);
+    un1(fl_nodes[3]*2) = un1(fl_nodes[2]*2);
+    un1(fl_nodes[3]*2+1) = un1(fl_nodes[2]*2+1);
+
+    if(distance(xv(old_nodes[0],all),x(fl_nodes[0],all)) < distance(x(fl_nodes[3],all),xv(old_nodes[1],all))){
+      elem.conn.push_back({nodes(old_nodes[0]), nodes(old_nodes[1]), fl_nodes[0]});
+      elem.conn.push_back({fl_nodes[0], fl_nodes[3], nodes(old_nodes[0])});
+    }
+    else{
+      elem.conn.push_back({nodes(old_nodes[0]), nodes(old_nodes[1]), fl_nodes[3]});
+      elem.conn.push_back({nodes(old_nodes[1]), fl_nodes[0], fl_nodes[3]});
+    }
+
+    if(distance(x(fl_nodes[2],all),xv(old_nodes[2],all)) < distance(xv(old_nodes[3],all),x(fl_nodes[1],all))){
+      elem.conn.push_back({fl_nodes[2], fl_nodes[1], nodes(old_nodes[2])});
+      elem.conn.push_back({nodes(old_nodes[2]), nodes(old_nodes[3]), fl_nodes[2]});
+    }
+    else{
+      elem.conn.push_back({fl_nodes[2], fl_nodes[1], nodes(old_nodes[3])});
+      elem.conn.push_back({fl_nodes[1], nodes(old_nodes[2]), nodes(old_nodes[3])});
     }
     elem.active = {1,1,1,1};
 
     ndof+=8;
   }
-  else if(type == 3){
-    // Code for T-crack
+}
+
+void partition_crack_tip(element &elem, int lmn, MatrixXi &conn, map <pair<int,int>,pair<int,int> > &allocated_nodes, MatrixXd &x, VectorXd &un1, int &ndof){
+  VectorXi nodes = conn(lmn,all);
+  MatrixXd xv = x(nodes,all);
+  MatrixXd ux = un1(nodes.array()*2);
+  MatrixXd uy = un1(nodes.array()*2+1);
+  int crack_tip_edge = -1;
+
+  for(int i = 0; i < 4; i++){
+    if(elem.edge[i] < 0){
+      crack_tip_edge = i;
+      elem.edge[i] = abs(elem.edge[i]);
+      break;
+    }
+  }
+  if (crack_tip_edge == -1){
+    cerr << "Crack tip not initialized/updated in the edge-dataset" << endl;
+  }
+  int nnod = ndof/2;
+  int type = det_type(elem.edge);
+  if (type == 1){
     int start = -1;
     for(start = 0; start < 4; ++start){
-      if(elem.edge[start] > 1.0)
+      if(!isnan(elem.edge[start]) && !isnan(elem.edge[(start+1)%4]))
         break;
     }
-    x(nnod,all) = point_interpolation(xv((start+1)%4,all),xv((start+2)%4,all),elem.edge[(start+1)%4]);
-    x(nnod+1,all) = x(nnod,all);
-    un1(ndof) = disp_interpolation(ux((start+1)%4),ux((start+2)%4),elem.edge[(start+1)%4]);
-    un1(ndof+1) = disp_interpolation(uy((start+1)%4),uy((start+2)%4),elem.edge[(start+1)%4]);
-    un1(ndof+2) = un1(ndof);
-    un1(ndof+3) = un1(ndof+1);
+    start = (start+1)%4;
 
-    x(nnod+2,all) = point_interpolation(xv((start+2)%4,all),xv((start+3)%4,all),elem.edge[(start+2)%4]);
-    x(nnod+3,all) = x(nnod+2,all);
-    un1(ndof+4) = disp_interpolation(ux((start+2)%4),ux((start+3)%4),elem.edge[(start+2)%4]);
-    un1(ndof+5) = disp_interpolation(uy((start+2)%4),uy((start+3)%4),elem.edge[(start+2)%4]);
-    un1(ndof+6) = un1(ndof+4);
-    un1(ndof+7) = un1(ndof+5);
+    vector<int> old_nodes{start,(start+1)%4,(start+2)%4,(start+3)%4};
+    vector<int> fl_nodes{nnod,nnod+1,nnod+2,nnod+3};
 
-    x(nnod+4,all) = point_interpolation(xv((start+3)%4,all),xv(start,all),elem.edge[(start+3)%4]);
-    x(nnod+5,all) = x(nnod+4,all);
-    un1(ndof+8) = disp_interpolation(ux((start+3)%4),ux(start),elem.edge[(start+3)%4]);
-    un1(ndof+9) = disp_interpolation(uy((start+3)%4),uy(start),elem.edge[(start+3)%4]);
-    un1(ndof+10) = un1(ndof+8);
-    un1(ndof+11) = un1(ndof+9);
+    // Code to change the nodes assigned
+    if(allocated_nodes.find(make_pair(nodes(old_nodes[0]),nodes(old_nodes[1]))) != allocated_nodes.end()){
+      fl_nodes[0] = allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[1]))].first;
+      fl_nodes[1] = allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[1]))].second;
+    }
+    else{
+      allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[1]))] = make_pair(fl_nodes[0],fl_nodes[1]);
+      allocated_nodes[make_pair(nodes(old_nodes[1]),nodes(old_nodes[0]))] = make_pair(fl_nodes[1],fl_nodes[0]);
+    }
 
-    MatrixXd xf(1,2);
-    xf = point_interpolation(xv(start,all),xv((start+1)%4,all),elem.edge[start]-1);
-    double x1 = x(nnod+4,0), y1 = x(nnod+4,1), x2 = x(nnod,0), y2 = x(nnod,1), x3 = x(nnod+2,0), y3 = x(nnod+2,1), x4 = xf(0,0), y4 = xf(0,1);
-    double e = (x1*y3-x1*y4-x3*y1+x3*y4+x4*y1-x4*y3)/(x1*y3-x1*y4-x2*y3+x2*y4-x3*y1+x3*y2+x4*y1-x4*y2);
-    // double uf = disp_interpolation(ux((start)%4),ux((start+1)%4),elem.edge[start]-1);
-    // double vf = disp_interpolation(uy((start)%4),uy((start+1)%4),elem.edge[start]-1);
+    if(allocated_nodes.find(make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))) != allocated_nodes.end()){
+      fl_nodes[2] = allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))].first;
+      fl_nodes[3] = allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))].second;
+    }
+    else{
+      allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))] = make_pair(fl_nodes[2],fl_nodes[3]);
+      allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[3]))] = make_pair(fl_nodes[3],fl_nodes[2]);
+    }
 
-    x(nnod+6,all) = point_interpolation(x(nnod+4,all), x(nnod,all),e);
-    x(nnod+7,all) = x(nnod+6,all);
-    un1(ndof+12) = disp_interpolation(un1(ndof+8),un1(ndof),e);
-    un1(ndof+13) = disp_interpolation(un1(ndof+9),un1(ndof+1),e);
-    un1(ndof+14) = un1(ndof+12);
-    un1(ndof+15) = un1(ndof+13);
 
-    elem.conn.push_back({nodes(start), nodes((start+1)%4) ,nnod, nnod+5});
-    elem.conn.push_back({nnod+7, nnod+1, nodes((start+2)%4), nnod+2});
-    elem.conn.push_back({nnod+4, nnod+6, nnod+3, nodes((start+3)%4)});
+    x(fl_nodes[0],all) = point_interpolation(xv(old_nodes[0],all),xv(old_nodes[1],all),elem.edge[old_nodes[0]]);
+    x(fl_nodes[1],all) = x(fl_nodes[0],all);
 
-    elem.active = {1,1,1};
+    un1(fl_nodes[0]*2) = disp_interpolation(ux(old_nodes[0]),ux(old_nodes[1]),elem.edge[start]);
+    un1(fl_nodes[0]*2+1) = disp_interpolation(uy(old_nodes[0]),uy(old_nodes[1]),elem.edge[start]);
+    un1(fl_nodes[1]*2) = un1(fl_nodes[0]*2);
+    un1(fl_nodes[1]*2+1) = un1(fl_nodes[0]*2+1);
 
-    ndof+=16;
+    x(fl_nodes[2],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]);
+    x(fl_nodes[3],all) = x(fl_nodes[2],all);
+
+    un1(fl_nodes[2]*2) = disp_interpolation(ux(old_nodes[3]),ux(old_nodes[0]),elem.edge[old_nodes[3]]);
+    un1(fl_nodes[2]*2+1) = disp_interpolation(uy(old_nodes[3]),uy(old_nodes[0]),elem.edge[old_nodes[3]]);
+    un1(fl_nodes[3]*2) = un1(fl_nodes[2]*2);
+    un1(fl_nodes[3]*2+1) = un1(fl_nodes[2]*2+1);
+
+    if(start == crack_tip_edge){
+      elem.conn.push_back({nodes(old_nodes[0]), fl_nodes[0] , fl_nodes[3]});
+      elem.conn.push_back({fl_nodes[0], nodes(old_nodes[1]), nodes(old_nodes[2])});
+      elem.conn.push_back({fl_nodes[0], nodes(old_nodes[2]), fl_nodes[2]});
+      elem.conn.push_back({fl_nodes[2], nodes(old_nodes[2]), nodes(old_nodes[3])});
+      allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[1]))].second = -allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[1]))].second;
+      allocated_nodes[make_pair(nodes(old_nodes[1]),nodes(old_nodes[0]))].first = -allocated_nodes[make_pair(nodes(old_nodes[1]),nodes(old_nodes[0]))].first;
+    }
+    else{
+      elem.conn.push_back({nodes(old_nodes[0]), fl_nodes[0] , fl_nodes[2]});
+      elem.conn.push_back({fl_nodes[1], nodes(old_nodes[1]), nodes(old_nodes[2])});
+      elem.conn.push_back({fl_nodes[1], nodes(old_nodes[2]), fl_nodes[2]});
+      elem.conn.push_back({fl_nodes[2], nodes(old_nodes[2]), nodes(old_nodes[3])});
+
+      allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))].second = -allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))].second;
+      allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[3]))].first = -allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[3]))].first;
+    }
+
+    elem.active = {1,1,1,1};
+
+    ndof+=8;
   }
-  else if(type == 4){
-    // Code for intersecting crack
+  else if(type == 2){
+    int start = 0;
+    if (isnan(elem.edge[1]) && isnan(elem.edge[3])){
+      start = 1;
+    }
 
+    vector<int> old_nodes{start,(start+1)%4,(start+2)%4,(start+3)%4};
+    vector<int> fl_nodes{nnod,nnod+1,nnod+2,nnod+3};
+
+    // Code to change the nodes assigned
+    if(allocated_nodes.find(make_pair(nodes(old_nodes[1]),nodes(old_nodes[2]))) != allocated_nodes.end()){
+      fl_nodes[0] = allocated_nodes[make_pair(nodes(old_nodes[1]),nodes(old_nodes[2]))].first;
+      fl_nodes[1] = allocated_nodes[make_pair(nodes(old_nodes[1]),nodes(old_nodes[2]))].second;
+    }
+    else{
+      allocated_nodes[make_pair(nodes(old_nodes[1]),nodes(old_nodes[2]))] = make_pair(fl_nodes[0],fl_nodes[1]);
+      allocated_nodes[make_pair(nodes(old_nodes[2]),nodes(old_nodes[1]))] = make_pair(fl_nodes[1],fl_nodes[0]);
+    }
+
+    if(allocated_nodes.find(make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))) != allocated_nodes.end()){
+      fl_nodes[2] = allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))].first;
+      fl_nodes[3] = allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))].second;
+    }
+    else{
+      allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))] = make_pair(fl_nodes[2],fl_nodes[3]);
+      allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[3]))] = make_pair(fl_nodes[3],fl_nodes[2]);
+    }
+
+
+    x(fl_nodes[0],all) = point_interpolation(xv(old_nodes[1],all),xv(old_nodes[2],all),elem.edge[old_nodes[1]]);
+    x(fl_nodes[1],all) = x(fl_nodes[0],all);
+    un1(fl_nodes[0]*2) = disp_interpolation(ux(old_nodes[1]),ux(old_nodes[2]),elem.edge[old_nodes[1]]);
+    un1(fl_nodes[0]*2+1) = disp_interpolation(uy(old_nodes[1]),uy(old_nodes[2]),elem.edge[old_nodes[1]]);
+    un1(fl_nodes[1]*2) = un1(fl_nodes[0]*2);
+    un1(fl_nodes[1]*2+1) = un1(fl_nodes[0]*2+1);
+
+    x(fl_nodes[2],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]);
+    x(fl_nodes[3],all) = x(fl_nodes[2],all);
+    un1(fl_nodes[2]*2) = disp_interpolation(ux(old_nodes[3]),ux(old_nodes[0]),elem.edge[old_nodes[3]]);
+    un1(fl_nodes[2]*2+1) = disp_interpolation(uy((old_nodes[3])%4),uy(old_nodes[0]),elem.edge[old_nodes[3]]);
+    un1(fl_nodes[3]*2) = un1(fl_nodes[2]*2);
+    un1(fl_nodes[3]*2+1) = un1(fl_nodes[2]*2+1);
+
+    if((start+1)%4 == crack_tip_edge){
+      if(distance(xv(old_nodes[0],all),x(fl_nodes[0],all)) < distance(x(fl_nodes[3],all),xv(old_nodes[1],all))){
+        elem.conn.push_back({nodes(old_nodes[0]), nodes(old_nodes[1]), fl_nodes[0]});
+        elem.conn.push_back({fl_nodes[0], fl_nodes[3], nodes(old_nodes[0])});
+      }
+      else{
+        elem.conn.push_back({nodes(old_nodes[0]), nodes(old_nodes[1]), fl_nodes[3]});
+        elem.conn.push_back({nodes(old_nodes[1]), fl_nodes[0], fl_nodes[3]});
+      }
+
+      if(distance(x(fl_nodes[2],all),xv(old_nodes[2],all)) < distance(xv(old_nodes[3],all),x(fl_nodes[0],all))){
+        elem.conn.push_back({fl_nodes[2], fl_nodes[0], nodes(old_nodes[2])});
+        elem.conn.push_back({nodes(old_nodes[2]), nodes(old_nodes[3]), fl_nodes[2]});
+      }
+      else{
+        elem.conn.push_back({fl_nodes[2], fl_nodes[0], nodes(old_nodes[3])});
+        elem.conn.push_back({fl_nodes[0], nodes(old_nodes[2]), nodes(old_nodes[3])});
+      }
+      allocated_nodes[make_pair(nodes(old_nodes[1]),nodes(old_nodes[2]))].second = -allocated_nodes[make_pair(nodes(old_nodes[1]),nodes(old_nodes[2]))].second;
+      allocated_nodes[make_pair(nodes(old_nodes[2]),nodes(old_nodes[1]))].first = -allocated_nodes[make_pair(nodes(old_nodes[2]),nodes(old_nodes[1]))].first;
+    }
+    else{
+      if(distance(xv(old_nodes[0],all),x(fl_nodes[0],all)) < distance(x(fl_nodes[2],all),xv(old_nodes[1],all))){
+        elem.conn.push_back({nodes(old_nodes[0]), nodes(old_nodes[1]), fl_nodes[0]});
+        elem.conn.push_back({fl_nodes[0], fl_nodes[2], nodes(old_nodes[0])});
+      }
+      else{
+        elem.conn.push_back({nodes(old_nodes[0]), nodes(old_nodes[1]), fl_nodes[2]});
+        elem.conn.push_back({nodes(old_nodes[1]), fl_nodes[0], fl_nodes[2]});
+      }
+
+      if(distance(x(fl_nodes[2],all),xv(old_nodes[2],all)) < distance(xv(old_nodes[3],all),x(fl_nodes[1],all))){
+        elem.conn.push_back({fl_nodes[2], fl_nodes[1], nodes(old_nodes[2])});
+        elem.conn.push_back({nodes(old_nodes[2]), nodes(old_nodes[3]), fl_nodes[2]});
+      }
+      else{
+        elem.conn.push_back({fl_nodes[2], fl_nodes[1], nodes(old_nodes[3])});
+        elem.conn.push_back({fl_nodes[1], nodes(old_nodes[2]), nodes(old_nodes[3])});
+      }
+      allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))].second = -allocated_nodes[make_pair(nodes(old_nodes[3]),nodes(old_nodes[0]))].second;
+      allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[3]))].first = -allocated_nodes[make_pair(nodes(old_nodes[0]),nodes(old_nodes[3]))].first;
+    }
+
+    elem.active = {1,1,1,1};
+
+    ndof+=8;
   }
 }
 
+void partition_transition(element &elem, int lmn, MatrixXi &conn, map <pair<int,int>,pair<int,int> > &allocated_nodes, MatrixXd &x, VectorXd &un1, int &ndof){
+  VectorXi nodes = conn(lmn,all);
+  int start = -1, floating_node = -1;
+  for(start = 0; start < 4; ++start){
+    if(allocated_nodes.find(make_pair(nodes(start),nodes((start+1)%4))) != allocated_nodes.end()){
+      if(allocated_nodes[make_pair(nodes(start),nodes((start+1)%4))].first > 0)
+        floating_node = allocated_nodes[make_pair(nodes(start),nodes((start+1)%4))].first;
+      else
+        floating_node = allocated_nodes[make_pair(nodes(start),nodes((start+1)%4))].second;
+      allocated_nodes[make_pair(nodes(start),nodes((start+1)%4))].first = abs(allocated_nodes[make_pair(nodes(start),nodes((start+1)%4))].first);
+      allocated_nodes[make_pair(nodes(start),nodes((start+1)%4))].second = abs(allocated_nodes[make_pair(nodes(start),nodes((start+1)%4))].second);
+      allocated_nodes[make_pair(nodes((start+1)%4),nodes(start))].first = abs(allocated_nodes[make_pair(nodes((start+1)%4),nodes(start))].first);
+      allocated_nodes[make_pair(nodes((start+1)%4),nodes(start))].second = abs(allocated_nodes[make_pair(nodes((start+1)%4),nodes(start))].second);
+      break;
+    }
+  }
+  vector <int> old_nodes = {nodes(start), nodes((start+1)%4), nodes((start+2)%4), nodes((start+3)%4)};
 
-void floating_nodes(vector<int> &discont, map <int,element> &fn_elements, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof){
+  elem.conn.push_back({old_nodes[0],floating_node,old_nodes[3]});
+  elem.conn.push_back({old_nodes[3],floating_node,old_nodes[2]});
+  elem.conn.push_back({old_nodes[2],floating_node,old_nodes[1]});
+
+  elem.active = {1,1,1,1};
+}
+
+void floating_nodes(vector<int> &discont, map <int,element> &fn_elements, map <pair<int,int>,pair<int,int> > &allocated_nodes, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof){
 
   int nelm = conn.rows();
   for (int i = 0; i < nelm; ++i){
-    if(discont[i]==1){
-      partition(fn_elements[i], i, conn, x, un1, ndof);
+    if(discont[i] == 1){
+      partition(fn_elements[i], i, conn, allocated_nodes, x, un1, ndof);
       discont[i]=2;
+    }
+  }
+
+  for(int i = 0; i < nelm; ++i){
+    if(discont[i] == 3){
+      partition_crack_tip(fn_elements[i], i, conn, allocated_nodes, x, un1, ndof);
+      discont[i] = 5;
+    }
+  }
+
+  for(int i = 0; i < nelm; ++i){
+    if(discont[i] == 4){
+      partition_transition(fn_elements[i], i, conn, allocated_nodes, x, un1, ndof);
+      discont[i] = 6;
     }
   }
 }
@@ -227,10 +439,8 @@ void remove_singular_elements(map <int,element> &fn_elements, MatrixXd &x){
         vector<int> nodes = lconn[j];
         MatrixXd xv = x(nodes,all);
         double area_elem = -1;
-        if(lconn.size() == 3)
-          area_elem = 0.5*(xv(0,0)*xv(1,1)-xv(1,0)*xv(0,1) + xv(1,0)*xv(2,1)-xv(2,0)*xv(1,1) + xv(2,0)*xv(3,1)-xv(3,0)*xv(2,1) + xv(3,0)*xv(0,1)-xv(0,0)*xv(3,1));
-        else
-          area_elem = 0.5*(xv(0,0)*xv(1,1)-xv(1,0)*xv(0,1) + xv(1,0)*xv(2,1)-xv(2,0)*xv(1,1) + xv(2,0)*xv(0,1)-xv(0,0)*xv(2,1));
+
+        area_elem = 0.5*(xv(0,0)*xv(1,1)-xv(1,0)*xv(0,1) + xv(1,0)*xv(2,1)-xv(2,0)*xv(1,1) + xv(2,0)*xv(0,1)-xv(0,0)*xv(2,1));
 
         if(area_elem < ar_tol){
           it->second.active[j] = 0;

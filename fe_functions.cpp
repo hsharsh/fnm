@@ -214,43 +214,29 @@ void assemble_mg(VectorXd &mg, MatrixXd &x, MatrixXi &conn, vector<int> &discont
     }
     else{
       vector<vector<int> > lconn = fn_elements[i].conn;
-      if(lconn.size() == 3){
-        for (int j = 0; j < lconn.size(); ++j){
-          if(fn_elements[i].active[j]){
-            vector<int> nodes = lconn[j];
-            MatrixXd xv = x(nodes,all);
-            MatrixXd ml = quad_ml(xv,area,rho);
 
-            vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
-                                nodes[1]*2, nodes[1]*2+1,
-                                nodes[2]*2, nodes[2]*2+1,
-                                nodes[3]*2, nodes[3]*2+1};
+      for (int j = 0; j < lconn.size(); ++j){
+        if(fn_elements[i].active[j]){
+          vector<int> nodes = lconn[j];
+          MatrixXd xv = x(nodes,all);
+          MatrixXd ml = tri_ml(xv,area,rho);
 
-            mg(dof) = mg(dof) + ml.diagonal();
-          }
-        }
-      }
-      else{
-        for (int j = 0; j < lconn.size(); ++j){
-          if(fn_elements[i].active[j]){
-            vector<int> nodes = lconn[j];
-            MatrixXd xv = x(nodes,all);
-            MatrixXd ml = tri_ml(xv,area,rho);
+          vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
+                              nodes[1]*2, nodes[1]*2+1,
+                              nodes[2]*2, nodes[2]*2+1};
 
-            vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
-                                nodes[1]*2, nodes[1]*2+1,
-                                nodes[2]*2, nodes[2]*2+1};
-
-            mg(dof) = mg(dof) + ml.diagonal();
-          }
+          mg(dof) = mg(dof) + ml.diagonal();
         }
       }
     }
   }
-  // for (int i = 0; i < ndof; ++i){
-  //   if(mg(i) == 0)
-  //     mg(i) = 1.0;
-  // }
+
+  // When removing critical elements there are nodes to which no element is contributing.
+  for (int i = 0; i < ndof; ++i){
+    if(mg(i) == 0){
+      mg(i) = 1.0;
+    }
+  }
 }
 
 void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> &fn_elements, vector<pair<double,double> > &matprop, vector<pair<int,int> > &cze){
@@ -300,41 +286,21 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector
     else{
 
       vector<vector<int> > lconn = fn_elements[i].conn;
-      if(lconn.size() == 3){
-        for (int j = 0; j < lconn.size(); ++j){
-          if(fn_elements[i].active[j]){
-            vector<int> nodes = lconn[j];
-            MatrixXd xv = x(nodes,all);
-            MatrixXd kl = quad_kl(xv,area,E,nu);
 
-            vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
-                                nodes[1]*2, nodes[1]*2+1,
-                                nodes[2]*2, nodes[2]*2+1,
-                                nodes[3]*2, nodes[3]*2+1};
-            VectorXd u = un(dof);
+      for (int j = 0; j < lconn.size(); ++j){
+        if(fn_elements[i].active[j]){
+          vector<int> nodes = lconn[j];
+          MatrixXd xv = x(nodes,all);
+          MatrixXd kl = tri_kl(xv,area,E,nu);
 
-            #pragma omp critical
-              fi(dof) = fi(dof) + (kl*u);
+          vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
+                              nodes[1]*2, nodes[1]*2+1,
+                              nodes[2]*2, nodes[2]*2+1};
+          VectorXd u = un(dof);
 
-          }
-        }
-      }
-      else{
-        for (int j = 0; j < lconn.size(); ++j){
-          if(fn_elements[i].active[j]){
-            vector<int> nodes = lconn[j];
-            MatrixXd xv = x(nodes,all);
-            MatrixXd kl = tri_kl(xv,area,E,nu);
+          #pragma omp critical
+            fi(dof) = fi(dof) + (kl*u);
 
-            vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
-                                nodes[1]*2, nodes[1]*2+1,
-                                nodes[2]*2, nodes[2]*2+1};
-            VectorXd u = un(dof);
-
-            #pragma omp critical
-              fi(dof) = fi(dof) + (kl*u);
-
-          }
         }
       }
     }
@@ -363,40 +329,21 @@ void assemble_lcg(VectorXd &lcg, VectorXd &vn, MatrixXd &x, MatrixXi &conn, vect
     }
     else{
       vector<vector<int> > lconn = fn_elements[i].conn;
-      if(lconn.size() == 3){
-        for (int j = 0; j < lconn.size(); ++j){
-          if(fn_elements[i].active[j]){
-            vector<int> nodes = lconn[j];
-            MatrixXd xv = x(nodes,all);
-            MatrixXd cl = alpha*quad_ml(xv,area,rho).array();
+      for (int j = 0; j < lconn.size(); ++j){
+        if(fn_elements[i].active[j]){
+          vector<int> nodes = lconn[j];
+          MatrixXd xv = x(nodes,all);
+          MatrixXd cl = alpha*tri_ml(xv,area,rho).array();
 
-            vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
-                                nodes[1]*2, nodes[1]*2+1,
-                                nodes[2]*2, nodes[2]*2+1,
-                                nodes[3]*2, nodes[3]*2+1};
+          vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
+                              nodes[1]*2, nodes[1]*2+1,
+                              nodes[2]*2, nodes[2]*2+1};
 
-            VectorXd v = vn(dof);
-            lcg(dof) = lcg(dof) + (cl*v);
-          }
+          VectorXd v = vn(dof);
+          lcg(dof) = lcg(dof) + (cl*v);
         }
       }
-      else{
-        for (int j = 0; j < lconn.size(); ++j){
-          if(fn_elements[i].active[j]){
-            vector<int> nodes = lconn[j];
-            MatrixXd xv = x(nodes,all);
-            MatrixXd cl = alpha*tri_ml(xv,area,rho).array();
-
-            vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
-                                nodes[1]*2, nodes[1]*2+1,
-                                nodes[2]*2, nodes[2]*2+1};
-
-            VectorXd v = vn(dof);
-            lcg(dof) = lcg(dof) + (cl*v);
-          }
-        }
-      }
-
     }
+
   }
 }

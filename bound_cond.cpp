@@ -3,62 +3,40 @@
 // Note that with 0-indexed arrays, first dof is node*(#dofs), next is node*(#dofs)+1, and so on
 void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn1, VectorXd &fg){
   double bcx, bcy;
-  VectorXi right(6);
-  right << 9,  10,  11,  12, 112, 170;
-  right = right.array()-1;
+  // Syntax: LinSpaced(#elements,start,end). Decrease the start and end by 1 (if taken from a 1-indexed mesh), to reflect 0-indexing
+  VectorXi bottom = VectorXi::LinSpaced(41,1,41);
+  bottom = bottom.array()-1;
   bcx = 0;
   bcy = 0;
-  for(int i=0; i < right.size();++i){
-    int node_bc = right(i);
-    int idof = node_bc*2;
+  for(int i=0; i < bottom.size();++i){
+    long node_bc = bottom(i);
+    long idof = node_bc*2;
     vn(idof) = bcx;
-    vn(idof+1) = bcy;
     vn1(idof) = bcx;
+    vn(idof+1) = bcy;
     vn1(idof+1) = bcy;
   }
 
-  VectorXi leftbottom(3);
-  leftbottom << 6,  7, 72;
-  leftbottom = leftbottom.array()-1;
+  VectorXi top = VectorXi::LinSpaced(41,3322,3362);
+  top = top.array()-1;
   bcx = 0;
-  bcy = -0.001;
-  for(int i=0; i < leftbottom.size();++i){
-    int node_bc = leftbottom(i);
-    int idof = node_bc*2;
+  bcy = 1e-4;
+  for(int i=0; i < top.size();++i){
+    long node_bc = top(i);
+    long idof = node_bc*2;
     vn(idof) = bcx;
-    vn(idof+1) = bcy;
     vn1(idof) = bcx;
+    vn(idof+1) = bcy;
     vn1(idof+1) = bcy;
   }
 
-  VectorXi lefttop(3);
-  lefttop << 1,  4, 52;
-  lefttop = lefttop.array()-1;
-  bcx = 0;
-  bcy = 0.001;
-  for(int i=0; i < lefttop.size();++i){
-    int node_bc = lefttop(i);
-    int idof = node_bc*2;
-    vn(idof) = bcx;
-    vn(idof+1) = bcy;
-    vn1(idof) = bcx;
-    vn1(idof+1) = bcy;
-  }
-}
-
-
-void temporary_bc(VectorXd &vn, VectorXd &vn1){
-  double bcx, bcy;
-  VectorXi left = VectorXi::LinSpaced(5,1,169);
+  VectorXi left = VectorXi::LinSpaced(81,1,3322);
   left = left.array()-1;
-  bcx = 0.00866025;
-  bcy = 0.005;
+  bcx = 0;
   for(int i=0; i < left.size();++i){
-    int node_bc = left(i);
-    int idof = node_bc*2;
-    vn(idof) = bcx;
-    vn(idof+1) = bcy;
-    vn1(idof) = bcx;
-    vn1(idof+1) = bcy;
+    long node_bc = left(i);
+    long idof = node_bc*2;
+    un(idof) = bcx;
+    un1(idof) = bcx;
   }
 }

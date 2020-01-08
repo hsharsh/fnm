@@ -86,4 +86,4 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
  srate = 10
  nlyrs = 2
  init_c = 1
- j_tol = 1000
+ j_tol = 1e-7

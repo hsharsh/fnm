@@ -10266,7 +10266,7 @@
 ** 
 *Step, name=Step-1, nlgeom=NO
 *Static
-0.2, 10., 0.0001, 0.2
+0.02, 1., 1e-05, 0.02
 ** 
 ** BOUNDARY CONDITIONS
 ** 

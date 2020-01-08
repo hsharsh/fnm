@@ -107,16 +107,8 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
 
   int tip_element = -1;
   for(int i = 0; i < nelm; ++i){
-    VectorXi nodes = conn(i,all);
-    if(!discont[i]){
-      for(int j = 0; j < 4; ++j){
-        if(cparam.find(make_pair(nodes(j),nodes((j+1)%4))) != cparam.end()){
-          tip_element = i;
-        }
-        if(cparam.find(make_pair(nodes((j+1)%4),nodes(j))) != cparam.end()){
-          tip_element = i;
-        }
-      }
+    if(discont[i] == 5){
+      tip_element = i;
     }
   }
 
@@ -186,7 +178,7 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
   // cout << "\nDomain Elem: ";
   for (set<int>::iterator it = domain_elem.begin(); it != domain_elem.end(); ++it){
     // cout << (*it)+1 << " ";
-    if(discont[*it]){
+    if(discont[*it] && discont[*it] != 6){
       vector<vector<int> > lconn = fn_elements[*it].conn;
       bool out = 0;
 
@@ -255,7 +247,7 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
   // cout << q << endl;
   for (set<int>::iterator it = domain_elem.begin(); it != domain_elem.end(); ++it){
     int i = *it;
-    if(!discont[i]){
+    if(!discont[i] || discont[i] == 6){
       VectorXi nodes = conn(i,all);
       MatrixXd xv = x(nodes,all);
       // cout << "Element " << i << endl;
@@ -274,43 +266,22 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
     }
     else{
       vector<vector<int> > lconn = fn_elements[i].conn;
-      if(lconn.size() == 3){
-        for (int j = 0; j < lconn.size(); ++j){
-          if(fn_elements[i].active[j]){
-            vector<int> nodes = lconn[j];
-            MatrixXd xv = x(nodes,all);
 
-            vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
-                                nodes[1]*2, nodes[1]*2+1,
-                                nodes[2]*2, nodes[2]*2+1,
-                                nodes[3]*2, nodes[3]*2+1};
-            VectorXd u = un1(dof);
-            VectorXd lq = q(nodes);
-            // cout << "Element " << i << "-subelement "<< j << ":\n" << lq << endl;
-            // double temp = j_int;
-            j_int += quad_j(xv, u, lq, E, nu, direction);
-            // cout << "Element " << i << "-subelement "<< j << ": " << j_int-temp << endl;
+      for (int j = 0; j < lconn.size(); ++j){
+        if(fn_elements[i].active[j]){
+          vector<int> nodes = lconn[j];
+          MatrixXd xv = x(nodes,all);
 
-          }
-        }
-      }
-      else{
-        for (int j = 0; j < lconn.size(); ++j){
-          if(fn_elements[i].active[j]){
-            vector<int> nodes = lconn[j];
-            MatrixXd xv = x(nodes,all);
+          vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
+                              nodes[1]*2, nodes[1]*2+1,
+                              nodes[2]*2, nodes[2]*2+1};
+          VectorXd u = un1(dof);
+          VectorXd lq = q(nodes);
+          // cout << "Element " << i << "-subelement "<< j << ":\n" << lq << endl;
+          // double temp = j_int;
+          j_int += tri_j(xv, u, lq, E, nu, direction);
+          // cout << "Element " << i << "-subelement "<< j << ": " << j_int-temp << endl;
 
-            vector<int> dof = { nodes[0]*2, nodes[0]*2+1,
-                                nodes[1]*2, nodes[1]*2+1,
-                                nodes[2]*2, nodes[2]*2+1};
-            VectorXd u = un1(dof);
-            VectorXd lq = q(nodes);
-            // cout << "Element " << i << "-subelement "<< j << ":\n" << lq << endl;
-            // double temp = j_int;
-            j_int += tri_j(xv, u, lq, E, nu, direction);
-            // cout << "Element " << i << "-subelement "<< j << ": " << j_int-temp << endl;
-
-          }
         }
       }
 

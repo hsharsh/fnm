@@ -23,7 +23,7 @@ int main(int argc, char* argv[]){
   MatrixXd x = MatrixXd::Zero(nodes.rows()*2+elements.rows()*4,2);
   x(seq(0,nodes.rows()-1),all) = nodes(all,seq(1,last));
   MatrixXi conn = elements(all,seq(1,last)).array()-1;
-  vector<pair<pair<int,int>,pair<int,int> > > crack_tip;
+  // vector<pair<pair<int,int>,pair<int,int> > > crack_tip;
 
   int nnod = nodes.rows();
   int ndof = 2*nnod;
@@ -44,8 +44,18 @@ int main(int argc, char* argv[]){
   VectorXd an1 = VectorXd::Zero(nnod*2+nelm*8), stress = VectorXd::Zero(nnod*2+nelm*8);
 
   vector<int> discont(nnod,0);
+  /* Legend for discont values
+  0 -> Standard Quad
+  1 -> Cracked/Unprocessed
+  2 -> Cracked/Processed
+  3 -> Crack tip/Transition element
+  4 -> Element adajacent to crack tip changed for compatibility/Transition element
+  5 -> 3/Processed
+  6 -> 4/Processed
+  */
   map <int,element> fn_elements;
   map <pair<int,int>,double> cparam;
+  map <pair<int,int>,pair<int,int> > allocated_nodes;
   vector<pair<double,double> > matprop(nelm);
   vector<pair<int,int> > cze(nelm);
 
@@ -58,6 +68,21 @@ int main(int argc, char* argv[]){
   bool first_iteration = 0;
   double t = 0, n = srate, ti = 0;
   bool crack_active = 1;
+
+  // Define crack
+  if(init_c){
+    cout << "Crack intialized" << endl;
+    crack_def(discont,fn_elements, conn, cparam);
+  }
+
+  // Add floating nodes to the global matrices
+  floating_nodes(discont, fn_elements, allocated_nodes, conn, x, un1, ndof);
+
+  // Remove elements which have area smaller than a certain tolerance (defined in utilities.cpp)
+  remove_singular_elements(fn_elements,x);
+
+
+
   while(t <= tmax){
     // cout << "Time: " << t << endl;
 
@@ -91,38 +116,15 @@ int main(int argc, char* argv[]){
 
     un1 = un + vn1*dt;
 
-    // Floating node constraints
-
-    // Crack tip
-    // for (vector <pair< pair<int,int>,pair<int,int> > >::iterator it = crack_tip.begin(); it != crack_tip.end(); ++it ){
-    //   double e = cparam[make_pair((it->second).first,(it->second).second )];
-    //   un1((it->first).first*2) = (1-e)*un1((it->second).first*2) + e*un1((it->second).second*2);
-    //   un1((it->first).first*2+1) = (1-e)*un1((it->second).first*2+1) + e*un1((it->second).second*2+1);
-    //   un1((it->first).second*2) = (1-e)*un1((it->second).first*2) + e*un1((it->second).second*2);
-    //   un1((it->first).second*2+1) = (1-e)*un1((it->second).first*2+1) + e*un1((it->second).second*2+1);
-    // }
-    //
-    // // Crack path
-    // if(!first_iteration){
-    //   for(int i = 883, j = 888; i <= 911; i+=4, j+=4){
-    //     un1(i*2) = un1(j*2);
-    //     un1(i*2+1) = un1(j*2+1);
-    //   }
-    //
-    //   for(int i = 882, j = 889; i <= 910; i+=4, j+=4){
-    //     un1(i*2) = un1(j*2);
-    //     un1(i*2+1) = un1(j*2+1);
-    //   }
-    // }
-
     // BC for displacement
     boundary_conditions(un,un1,vn,vn1,fg);
 
     // Define crack
-    if(abs(t-0) < 1e-5 && init_c){
-      cout << "Crack intialized" << endl;
-      crack_def(discont,fn_elements, conn, cparam);
-    }
+    // if(abs(t-4.0) < 1e-8 && init_c){
+    //   cout << "Crack intialized" << endl;
+    //   crack_def_new(discont,fn_elements, conn, cparam);
+    // }
+
     // if(abs(t-0) > 1e-5 && first_iteration == 0){
     //   crack_tip.push_back(make_pair(make_pair(910,911),make_pair(428,449)));
     //   first_iteration = 1;
@@ -147,9 +149,8 @@ int main(int argc, char* argv[]){
       }
     }
 
-
     // Add floating nodes to the global matrices
-    floating_nodes(discont, fn_elements, conn, x, un1, ndof);
+    floating_nodes(discont, fn_elements, allocated_nodes, conn, x, un1, ndof);
 
     // Remove elements which have area smaller than a certain tolerance (defined in utilities.cpp)
     remove_singular_elements(fn_elements,x);
@@ -164,7 +165,7 @@ int main(int argc, char* argv[]){
     // cout << "x: " << endl;
     // cout << x(seq(1,ndof/2),all) << endl << endl;
     if(n >= srate){
-      write_j("j_int.m",t,compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs));
+      write_j("j_int.m",t,abs(compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs)));
       cout << "Time: " << t << endl;
 
       MatrixXd xdef = MatrixXd::Zero(ndof/2,3);
