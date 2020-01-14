@@ -3,42 +3,11 @@
 // Don't forget to make dicsont corresponding to the element as "1" to activate the floating nodes.
 void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &conn, map <pair<int,int>,double> &cparam){
   vector <int> cracked;
-  for (int i = 1361; i <= 1566; i+=41){
+  for(int i = 11129; i <= 11147; ++i)
     cracked.push_back(i-1);
-  }
   for (int i = 0; i < cracked.size(); ++i){
     discont[cracked[i]] = 1;
-    fn_elements[cracked[i]].edge = {NAN, NAN, 0.5, 0.5};
-    VectorXi nodes = conn(cracked[i],all);
-    for(int j = 0; j < 4; ++j){
-      if(!isnan(fn_elements[cracked[i]].edge[j])){
-        if(cparam.find(make_pair(nodes(j),nodes((j+1)%4))) == cparam.end() && cparam.find(make_pair(nodes((j+1)%4),nodes(j))) == cparam.end()){
-          cparam[make_pair(nodes(j),nodes((j+1)%4))] = fn_elements[cracked[i]].edge[j];
-        }
-      }
-    }
-  }
-  cracked.clear();
-  for (int i = 1401; i <= 1606; i+=41){
-    cracked.push_back(i-1);
-  }
-  for (int i = 0; i < cracked.size(); ++i){
-    discont[cracked[i]] = 1;
-    fn_elements[cracked[i]].edge = {0.5, 0.5, NAN, NAN};
-    VectorXi nodes = conn(cracked[i],all);
-    for(int j = 0; j < 4; ++j){
-      if(!isnan(fn_elements[cracked[i]].edge[j])){
-        if(cparam.find(make_pair(nodes(j),nodes((j+1)%4))) == cparam.end() && cparam.find(make_pair(nodes((j+1)%4),nodes(j))) == cparam.end()){
-          cparam[make_pair(nodes(j),nodes((j+1)%4))] = fn_elements[cracked[i]].edge[j];
-        }
-      }
-    }
-  }
-  cracked.clear();
-  cracked.push_back(1605);
-  for (int i = 0; i < cracked.size(); ++i){
-    discont[cracked[i]] = 3;
-    fn_elements[cracked[i]].edge = {0.5, -0.5, NAN, NAN};
+    fn_elements[cracked[i]].edge = {NAN, 0.1905, NAN, 0.8095};
     VectorXi nodes = conn(cracked[i],all);
     for(int j = 0; j < 4; ++j){
       if(!isnan(fn_elements[cracked[i]].edge[j])){
@@ -48,7 +17,21 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &co
       }
     }
   }
-  discont[1606] = 4;
+  cracked.clear();
+  cracked.push_back(11147);
+  for (int i = 0; i < cracked.size(); ++i){
+    discont[cracked[i]] = 3;
+    fn_elements[cracked[i]].edge = {NAN, -0.1905, NAN, 0.8095};
+    VectorXi nodes = conn(cracked[i],all);
+    for(int j = 0; j < 4; ++j){
+      if(!isnan(fn_elements[cracked[i]].edge[j])){
+        if(cparam.find(make_pair(nodes(j),nodes((j+1)%4))) == cparam.end() && cparam.find(make_pair(nodes((j+1)%4),nodes(j))) == cparam.end()){
+          cparam[make_pair(nodes(j),nodes((j+1)%4))] = abs(fn_elements[cracked[i]].edge[j]);
+        }
+      }
+    }
+  }
+  discont[11148] = 4;
 }
 
 int j_based_crack(vector<int> &discont, vector<vector<int> > &neighbours, map <int,element> &fn_elements, map <pair<int,int>,double> &cparam, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof, double E, double nu, double j_integral, int nlayers){
@@ -237,7 +220,7 @@ int j_based_crack(vector<int> &discont, vector<vector<int> > &neighbours, map <i
           }
 
           for (auto it:common){
-            if(it.second == 2 && it.first != i && correct_tip_edge){
+            if(it.second == 2 && it.first != i && correct_tip_edge && discont[it.first] == 0){
               next_transition = it.first;
             }
           }

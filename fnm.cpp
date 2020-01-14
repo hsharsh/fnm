@@ -14,7 +14,15 @@ int main(int argc, char* argv[]){
 
   // Creating a folder with time-stamp for saving data
   path.append(to_string((int)time(0)).append("/"));
+  // experimental::filesystem::create_directories(path); // Make this work
   mkdir(path.c_str(),0777);
+
+  // Copy the boundary_conditions
+  ifstream  src("bound_cond.cpp");
+  ofstream  dst(path+(string)"boundary_conditions.cpp");
+  dst << src.rdbuf();
+  src.close();
+  dst.close();
 
   MatrixXi elements = load_csv<MatrixXi,int>("/home/hsharsh/fnm/elements.inp");
   MatrixXd nodes = load_csv<MatrixXd,double>("/home/hsharsh/fnm/nodes.inp");
