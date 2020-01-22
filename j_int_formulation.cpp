@@ -118,7 +118,7 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
   // cout << "NN element -> " << tip_element << endl;
   if(tip_element == -1){
     // cerr << "Crack tip is indeterminate. J-intergral not computed" << endl;
-    return -1;
+    return NAN;
   }
 
   set<int> domain_elem, inner_nodes, outer_nodes;

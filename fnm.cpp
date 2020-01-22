@@ -73,7 +73,7 @@ int main(int argc, char* argv[]){
   // boundary_conditions(vn,vn1);
   // boundary_conditions(un,un1,vn,vn1);
 
-  bool first_iteration = 0;
+  // bool first_iteration = 0;
   double t = 0, n = srate, ti = 0;
   bool crack_active = 1;
 
@@ -110,13 +110,20 @@ int main(int argc, char* argv[]){
     assemble_lcg(lcg, vn, x, conn, discont, fn_elements, cze, rho, alpha);
 
     // BC for fg
-    boundary_conditions(un,un1,vn,vn1,fg);
+    if(t < 1){
+      boundary_conditions(un,un1,vn,vn1,fg);
+    }
+    // boundary_conditions(un,un1,vn,vn1,fg);
+
     // Solver
     an1(seq(0,ndof-1)) = mg.array().inverse()*(fg-fi-lcg).array();
     vn1 = vn + an1*dt;
 
     // BC for velocity
-    boundary_conditions(un,un1,vn,vn1,fg);
+    if(t < 1){
+      boundary_conditions(un,un1,vn,vn1,fg);
+    }
+    // boundary_conditions(un,un1,vn,vn1,fg);``
 
     // if(t < 4.0){
     //   temporary_bc(vn,vn1);
@@ -125,7 +132,10 @@ int main(int argc, char* argv[]){
     un1 = un + vn1*dt;
 
     // BC for displacement
-    boundary_conditions(un,un1,vn,vn1,fg);
+    if(t < 1){
+      boundary_conditions(un,un1,vn,vn1,fg);
+    }
+    // boundary_conditions(un,un1,vn,vn1,fg);
 
     // Define crack
     // if(abs(t-4.0) < 1e-8 && init_c){
@@ -141,7 +151,10 @@ int main(int argc, char* argv[]){
     // Crack propagation
 
     if(crack_active){
-      double j_integral = abs(compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs));
+      double j_integral = compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs);
+      if(j_integral == NAN){
+        cerr << "No J-integral computed." << endl;
+      }
       int c = j_based_crack(discont, neighbours, fn_elements, cparam, conn, x, un1, ndof, E, nu, j_integral, nlyrs);
       if (c == 1){
         crack_active = 0;
@@ -173,7 +186,7 @@ int main(int argc, char* argv[]){
     // cout << "x: " << endl;
     // cout << x(seq(1,ndof/2),all) << endl << endl;
     if(n >= srate){
-      write_j("j_int.m",t,abs(compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs)));
+      write_j("j_int.m",t,compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs));
       cout << "Time: " << t << endl;
 
       MatrixXd xdef = MatrixXd::Zero(ndof/2,3);
@@ -221,7 +234,7 @@ int main(int argc, char* argv[]){
     if(cracked == 1){
       cracked = 2;
       dt/=rf;
-      srate = 1;
+      srate = 4;
     }
 
     t = t+dt;
