@@ -3,11 +3,12 @@
 // Don't forget to make dicsont corresponding to the element as "1" to activate the floating nodes.
 void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &conn, map <pair<int,int>,double> &cparam){
   vector <int> cracked;
-  for(int i = 11129; i <= 11147; ++i)
+  for (int i = 401; i <= 419; ++i){
     cracked.push_back(i-1);
+  }
   for (int i = 0; i < cracked.size(); ++i){
     discont[cracked[i]] = 1;
-    fn_elements[cracked[i]].edge = {NAN, 0.1905, NAN, 0.8095};
+    fn_elements[cracked[i]].edge = {NAN, 0.5, NAN, 0.5};
     VectorXi nodes = conn(cracked[i],all);
     for(int j = 0; j < 4; ++j){
       if(!isnan(fn_elements[cracked[i]].edge[j])){
@@ -18,10 +19,10 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &co
     }
   }
   cracked.clear();
-  cracked.push_back(11147);
+  cracked.push_back(419);
   for (int i = 0; i < cracked.size(); ++i){
     discont[cracked[i]] = 3;
-    fn_elements[cracked[i]].edge = {NAN, -0.1905, NAN, 0.8095};
+    fn_elements[cracked[i]].edge = {NAN, -0.5, NAN, 0.5};
     VectorXi nodes = conn(cracked[i],all);
     for(int j = 0; j < 4; ++j){
       if(!isnan(fn_elements[cracked[i]].edge[j])){
@@ -31,7 +32,7 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &co
       }
     }
   }
-  discont[11148] = 4;
+  discont[420] = 4;
 }
 
 int j_based_crack(vector<int> &discont, vector<vector<int> > &neighbours, map <int,element> &fn_elements, map <pair<int,int>,double> &cparam, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof, double E, double nu, double j_integral, int nlayers){
@@ -141,7 +142,10 @@ int j_based_crack(vector<int> &discont, vector<vector<int> > &neighbours, map <i
                 double y = 0.25*((1-r)*(1-s)*xv(0,1)+(1+r)*(1-s)*xv(1,1)+(1+r)*(1+s)*xv(2,1)+(1-r)*(1+s)*xv(3,1));
                 double theta = atan2(y-cy,x-cx);
 
-
+                // Restricting crack to happen at a maximum of max_deviation angle (in radians).
+                // double max_deviation = pi/3;
+                // if( (abs(theta) < max_deviation || (abs(theta) < pi && abs(theta) > 2*max_deviation)) && cracked )
+                //   continue;
                 // cout << "Theta: " << theta*180/pi << endl;
 
                 MatrixXd T(2,2);

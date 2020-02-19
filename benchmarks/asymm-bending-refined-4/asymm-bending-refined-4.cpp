@@ -77,20 +77,20 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &co
 }
 
 
-tmax = 200
-dt = 2e-2
+tmax = 800
+dt = 5e-3
 E = 1
 nu = 0
 rho = 1
-alpha = 0.05
+alpha = 1
 sy = 100
-ar_tol = 2.5e-4
+ar_tol = 1e-4
 rf = 2
-tc = 0.1
+tc = 0
 srate = 10
 nlyrs = 2
 init_c = 1
-j_tol = 1e-7
+j_tol = 1e-8
 
 // Old shiz below this line
 

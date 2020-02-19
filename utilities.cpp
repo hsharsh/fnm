@@ -23,7 +23,8 @@
   double ar_tol,sy, j_tol, delta, smax, ashear;
   int cracked = 0;
 
-  string path = "/home/hsharsh/fnm/data";
+  string project_directory = "/home/hsharsh/fnm/";
+  string path = project_directory+"data";
 
   template <typename T> int sgn(T val) {
       return (T(0) < val) - (val < T(0));

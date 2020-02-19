@@ -234,13 +234,15 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
     sxy += xpos[i]*ypos[i];
   }
 
-  if(n*sxx-sx*sx == 0){
+  if(abs(n*sxx-sx*sx) < eps){
     direction = make_pair(0,1);
   }
   else{
     double m = (n*sxy-sx*sy)/(n*sxx-sx*sx);
     direction = make_pair(1/sqrt(1+m*m),m/sqrt(1+m*m));
   }
+  // cout << n*sxx-sx*sx << endl;
+  // cout << sx << " "<< sy << " "<< sxy << " "<< sxx << " "<< sxy << endl;
   // cout << direction.first << " " << direction.second << endl;
 
   // cout << "\nQ-vector: " << endl;

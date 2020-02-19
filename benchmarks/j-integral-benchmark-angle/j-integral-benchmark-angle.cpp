@@ -40,6 +40,58 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
   // }
 }
 
+void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &conn, map <pair<int,int>,double> &cparam){
+  vector <int> cracked;
+  for (int i = 401; i <= 407; ++i){
+    cracked.push_back(i-1);
+  }
+  for (int i = 0; i < cracked.size(); ++i){
+    discont[cracked[i]] = 1;
+    fn_elements[cracked[i]].edge = {NAN, 0.5, NAN, 0.5};
+    VectorXi nodes = conn(cracked[i],all);
+    for(int j = 0; j < 4; ++j){
+      if(!isnan(fn_elements[cracked[i]].edge[j])){
+        if(cparam.find(make_pair(nodes(j),nodes((j+1)%4))) == cparam.end() && cparam.find(make_pair(nodes((j+1)%4),nodes(j))) == cparam.end()){
+          cparam[make_pair(nodes(j),nodes((j+1)%4))] = abs(fn_elements[cracked[i]].edge[j]);
+        }
+      }
+    }
+  }
+  cracked.clear();
+  cracked.push_back(407);
+  for (int i = 0; i < cracked.size(); ++i){
+    discont[cracked[i]] = 3;
+    fn_elements[cracked[i]].edge = {NAN, -0.5, NAN, 0.5};
+    VectorXi nodes = conn(cracked[i],all);
+    for(int j = 0; j < 4; ++j){
+      if(!isnan(fn_elements[cracked[i]].edge[j])){
+        if(cparam.find(make_pair(nodes(j),nodes((j+1)%4))) == cparam.end() && cparam.find(make_pair(nodes((j+1)%4),nodes(j))) == cparam.end()){
+          cparam[make_pair(nodes(j),nodes((j+1)%4))] = abs(fn_elements[cracked[i]].edge[j]);
+        }
+      }
+    }
+  }
+  discont[408] = 4;
+}
+
+tmax = 15
+dt = 0.02
+E = 1
+nu = 0
+rho = 1
+alpha = 1
+sy = 6e8
+ar_tol = 1e-8
+rf = 1
+tc = 0.1
+srate = 10
+nlyrs = 2
+init_c = 1
+j_tol = 1e-7
+
+
+// Old shiz below this line.
+
 void crack_def(vector<int> &discont, map<int,element> &fn_elements){
   vector <int> cracked;
   for (int i = 401; i <= 408; ++i){

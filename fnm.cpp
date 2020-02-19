@@ -24,8 +24,8 @@ int main(int argc, char* argv[]){
   src.close();
   dst.close();
 
-  MatrixXi elements = load_csv<MatrixXi,int>("/home/hsharsh/fnm/elements.inp");
-  MatrixXd nodes = load_csv<MatrixXd,double>("/home/hsharsh/fnm/nodes.inp");
+  MatrixXi elements = load_csv<MatrixXi,int>(project_directory+"elements.inp");
+  MatrixXd nodes = load_csv<MatrixXd,double>(project_directory+"nodes.inp");
 
   // All coefficients are decreased by one for consistency with 0-indexing
   MatrixXd x = MatrixXd::Zero(nodes.rows()*2+elements.rows()*4,2);
@@ -110,20 +110,20 @@ int main(int argc, char* argv[]){
     assemble_lcg(lcg, vn, x, conn, discont, fn_elements, cze, rho, alpha);
 
     // BC for fg
-    if(t < 1){
-      boundary_conditions(un,un1,vn,vn1,fg);
-    }
-    // boundary_conditions(un,un1,vn,vn1,fg);
+    // if(t < 1){
+    //   boundary_conditions(un,un1,vn,vn1,fg);
+    // }
+    boundary_conditions(un,un1,vn,vn1,fg);
 
     // Solver
     an1(seq(0,ndof-1)) = mg.array().inverse()*(fg-fi-lcg).array();
     vn1 = vn + an1*dt;
 
     // BC for velocity
-    if(t < 1){
-      boundary_conditions(un,un1,vn,vn1,fg);
-    }
-    // boundary_conditions(un,un1,vn,vn1,fg);``
+    // if(t < 1){
+    //   boundary_conditions(un,un1,vn,vn1,fg);
+    // }
+    boundary_conditions(un,un1,vn,vn1,fg);
 
     // if(t < 4.0){
     //   temporary_bc(vn,vn1);
@@ -132,10 +132,10 @@ int main(int argc, char* argv[]){
     un1 = un + vn1*dt;
 
     // BC for displacement
-    if(t < 1){
-      boundary_conditions(un,un1,vn,vn1,fg);
-    }
-    // boundary_conditions(un,un1,vn,vn1,fg);
+    // if(t < 1){
+    //   boundary_conditions(un,un1,vn,vn1,fg);
+    // }
+    boundary_conditions(un,un1,vn,vn1,fg);
 
     // Define crack
     // if(abs(t-4.0) < 1e-8 && init_c){
@@ -155,6 +155,7 @@ int main(int argc, char* argv[]){
       if(j_integral == NAN){
         cerr << "No J-integral computed." << endl;
       }
+      j_integral = abs(j_integral); // Converting j-integral calculated opposeite to crack direction to positive.
       int c = j_based_crack(discont, neighbours, fn_elements, cparam, conn, x, un1, ndof, E, nu, j_integral, nlyrs);
       if (c == 1){
         crack_active = 0;
@@ -234,9 +235,9 @@ int main(int argc, char* argv[]){
     if(cracked == 1){
       cracked = 2;
       dt/=rf;
-      srate = 4;
+      srate = 5;
     }
-
+    // cout << dt << endl;
     t = t+dt;
     un = un1;
     vn = vn1;
