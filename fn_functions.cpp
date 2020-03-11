@@ -110,16 +110,16 @@ void partition(element &elem, int lmn, MatrixXi &conn, map <pair<int,int>,pair<i
     }
 
 
-    x(fl_nodes[0],all) = point_interpolation(xv(old_nodes[0],all),xv(old_nodes[1],all),elem.edge[old_nodes[0]]);
-    x(fl_nodes[1],all) = x(fl_nodes[0],all);
+    x(fl_nodes[0],all) = point_interpolation(xv(old_nodes[0],all),xv(old_nodes[1],all),elem.edge[old_nodes[0]]-eps);
+    x(fl_nodes[1],all) = point_interpolation(xv(old_nodes[0],all),xv(old_nodes[1],all),elem.edge[old_nodes[0]]+eps);//x(fl_nodes[0],all);
 
     un1(fl_nodes[0]*2) = disp_interpolation(ux(old_nodes[0]),ux(old_nodes[1]),elem.edge[start]);
     un1(fl_nodes[0]*2+1) = disp_interpolation(uy(old_nodes[0]),uy(old_nodes[1]),elem.edge[start]);
     un1(fl_nodes[1]*2) = un1(fl_nodes[0]*2);
     un1(fl_nodes[1]*2+1) = un1(fl_nodes[0]*2+1);
 
-    x(fl_nodes[2],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]);
-    x(fl_nodes[3],all) = x(fl_nodes[2],all);
+    x(fl_nodes[2],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]-eps);
+    x(fl_nodes[3],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]+eps);//x(fl_nodes[2],all);
 
     un1(fl_nodes[2]*2) = disp_interpolation(ux(old_nodes[3]),ux(old_nodes[0]),elem.edge[old_nodes[3]]);
     un1(fl_nodes[2]*2+1) = disp_interpolation(uy(old_nodes[3]),uy(old_nodes[0]),elem.edge[old_nodes[3]]);
@@ -164,15 +164,15 @@ void partition(element &elem, int lmn, MatrixXi &conn, map <pair<int,int>,pair<i
     }
 
 
-    x(fl_nodes[0],all) = point_interpolation(xv(old_nodes[1],all),xv(old_nodes[2],all),elem.edge[old_nodes[1]]);
-    x(fl_nodes[1],all) = x(fl_nodes[0],all);
+    x(fl_nodes[0],all) = point_interpolation(xv(old_nodes[1],all),xv(old_nodes[2],all),elem.edge[old_nodes[1]]-eps);
+    x(fl_nodes[1],all) = point_interpolation(xv(old_nodes[1],all),xv(old_nodes[2],all),elem.edge[old_nodes[1]]+eps);//x(fl_nodes[0],all);
     un1(fl_nodes[0]*2) = disp_interpolation(ux(old_nodes[1]),ux(old_nodes[2]),elem.edge[old_nodes[1]]);
     un1(fl_nodes[0]*2+1) = disp_interpolation(uy(old_nodes[1]),uy(old_nodes[2]),elem.edge[old_nodes[1]]);
     un1(fl_nodes[1]*2) = un1(fl_nodes[0]*2);
     un1(fl_nodes[1]*2+1) = un1(fl_nodes[0]*2+1);
 
-    x(fl_nodes[2],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]);
-    x(fl_nodes[3],all) = x(fl_nodes[2],all);
+    x(fl_nodes[2],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]-eps);
+    x(fl_nodes[3],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]+eps);//x(fl_nodes[2],all);
     un1(fl_nodes[2]*2) = disp_interpolation(ux(old_nodes[3]),ux(old_nodes[0]),elem.edge[old_nodes[3]]);
     un1(fl_nodes[2]*2+1) = disp_interpolation(uy((old_nodes[3])%4),uy(old_nodes[0]),elem.edge[old_nodes[3]]);
     un1(fl_nodes[3]*2) = un1(fl_nodes[2]*2);
@@ -251,16 +251,16 @@ void partition_crack_tip(element &elem, int lmn, MatrixXi &conn, map <pair<int,i
     }
 
 
-    x(fl_nodes[0],all) = point_interpolation(xv(old_nodes[0],all),xv(old_nodes[1],all),elem.edge[old_nodes[0]]);
-    x(fl_nodes[1],all) = x(fl_nodes[0],all);
+    x(fl_nodes[0],all) = point_interpolation(xv(old_nodes[0],all),xv(old_nodes[1],all),elem.edge[old_nodes[0]]-eps);
+    x(fl_nodes[1],all) = point_interpolation(xv(old_nodes[0],all),xv(old_nodes[1],all),elem.edge[old_nodes[0]]+eps);//x(fl_nodes[0],all);
 
     un1(fl_nodes[0]*2) = disp_interpolation(ux(old_nodes[0]),ux(old_nodes[1]),elem.edge[start]);
     un1(fl_nodes[0]*2+1) = disp_interpolation(uy(old_nodes[0]),uy(old_nodes[1]),elem.edge[start]);
     un1(fl_nodes[1]*2) = un1(fl_nodes[0]*2);
     un1(fl_nodes[1]*2+1) = un1(fl_nodes[0]*2+1);
 
-    x(fl_nodes[2],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]);
-    x(fl_nodes[3],all) = x(fl_nodes[2],all);
+    x(fl_nodes[2],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]-eps);
+    x(fl_nodes[3],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]+eps);//x(fl_nodes[2],all);
 
     un1(fl_nodes[2]*2) = disp_interpolation(ux(old_nodes[3]),ux(old_nodes[0]),elem.edge[old_nodes[3]]);
     un1(fl_nodes[2]*2+1) = disp_interpolation(uy(old_nodes[3]),uy(old_nodes[0]),elem.edge[old_nodes[3]]);
@@ -318,15 +318,15 @@ void partition_crack_tip(element &elem, int lmn, MatrixXi &conn, map <pair<int,i
     }
 
 
-    x(fl_nodes[0],all) = point_interpolation(xv(old_nodes[1],all),xv(old_nodes[2],all),elem.edge[old_nodes[1]]);
-    x(fl_nodes[1],all) = x(fl_nodes[0],all);
+    x(fl_nodes[0],all) = point_interpolation(xv(old_nodes[1],all),xv(old_nodes[2],all),elem.edge[old_nodes[1]]-eps);
+    x(fl_nodes[1],all) = point_interpolation(xv(old_nodes[1],all),xv(old_nodes[2],all),elem.edge[old_nodes[1]]+eps);//x(fl_nodes[0],all);
     un1(fl_nodes[0]*2) = disp_interpolation(ux(old_nodes[1]),ux(old_nodes[2]),elem.edge[old_nodes[1]]);
     un1(fl_nodes[0]*2+1) = disp_interpolation(uy(old_nodes[1]),uy(old_nodes[2]),elem.edge[old_nodes[1]]);
     un1(fl_nodes[1]*2) = un1(fl_nodes[0]*2);
     un1(fl_nodes[1]*2+1) = un1(fl_nodes[0]*2+1);
 
-    x(fl_nodes[2],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]);
-    x(fl_nodes[3],all) = x(fl_nodes[2],all);
+    x(fl_nodes[2],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]-eps);
+    x(fl_nodes[3],all) = point_interpolation(xv(old_nodes[3],all),xv(old_nodes[0],all),elem.edge[old_nodes[3]]+eps);//x(fl_nodes[2],all);
     un1(fl_nodes[2]*2) = disp_interpolation(ux(old_nodes[3]),ux(old_nodes[0]),elem.edge[old_nodes[3]]);
     un1(fl_nodes[2]*2+1) = disp_interpolation(uy((old_nodes[3])%4),uy(old_nodes[0]),elem.edge[old_nodes[3]]);
     un1(fl_nodes[3]*2) = un1(fl_nodes[2]*2);

@@ -6,6 +6,7 @@
 #include "bound_cond.cpp"
 #include "j_int_formulation.cpp"
 #include "crack_def.cpp"
+#include "stress_intensity_computation.cpp"
 
 int main(int argc, char* argv[]){
   double dt, tmax, E, nu, rho, alpha, tc;
@@ -155,8 +156,11 @@ int main(int argc, char* argv[]){
       if(j_integral == NAN){
         cerr << "No J-integral computed." << endl;
       }
-      j_integral = abs(j_integral); // Converting j-integral calculated opposeite to crack direction to positive.
-      int c = j_based_crack(discont, neighbours, fn_elements, cparam, conn, x, un1, ndof, E, nu, j_integral, nlyrs);
+      double dk = 1e-5;
+      pair<double,double> K = compute_K(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs, dk);
+
+      cout << "CPD: " << acos((3*pow(K.second,2)+sqrt(pow(K.first,4)+8*pow(K.first,2)*pow(K.second,2)))/(pow(K.first,2)+9*pow(K.second,2)))*180/pi << endl;
+      int c = max_tangential_crack(discont, neighbours, fn_elements, cparam, conn, x, K, j_integral);
       if (c == 1){
         crack_active = 0;
       }

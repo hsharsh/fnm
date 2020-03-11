@@ -3,7 +3,7 @@
 // Don't forget to make dicsont corresponding to the element as "1" to activate the floating nodes.
 void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &conn, map <pair<int,int>,double> &cparam){
   vector <int> cracked;
-  for (int i = 401; i <= 419; ++i){
+  for (int i = 401; i <= 407; ++i){
     cracked.push_back(i-1);
   }
   for (int i = 0; i < cracked.size(); ++i){
@@ -19,7 +19,7 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &co
     }
   }
   cracked.clear();
-  cracked.push_back(419);
+  cracked.push_back(407);
   for (int i = 0; i < cracked.size(); ++i){
     discont[cracked[i]] = 3;
     fn_elements[cracked[i]].edge = {NAN, -0.5, NAN, 0.5};
@@ -32,14 +32,14 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &co
       }
     }
   }
-  discont[420] = 4;
+  discont[408] = 4;
 }
 
-int j_based_crack(vector<int> &discont, vector<vector<int> > &neighbours, map <int,element> &fn_elements, map <pair<int,int>,double> &cparam, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof, double E, double nu, double j_integral, int nlayers){
+// Computing crack propagation by the formulation for maximum tangential stress formulation given in ABAQUS documentation.
+
+int max_tangential_crack(vector<int> &discont, vector<vector<int> > &neighbours, map <int,element> &fn_elements, map <pair<int,int>,double> &cparam, MatrixXi &conn, MatrixXd &x, pair<double,double> K, double j_integral){
   int ci = 0; // Crack-Initiated: Return paramater indicating whether a crack was added or not
 
-  // vector<double> xgp = {0};
-  // vector<double> wgp = {2};
   int nelm = conn.rows();
   int ngp = wgp.size();
 
@@ -76,102 +76,18 @@ int j_based_crack(vector<int> &discont, vector<vector<int> > &neighbours, map <i
 
         int tip_element = i;
 
-        // Find the domain elements
-        set<int> domain_elem, outer_nodes;
+        // Compute the crack direction
 
-        // Seed domain with the tip_element and outer with ndoes of tip_element
-        for(int j = 0; j < conn.cols(); ++j)
-          outer_nodes.insert(conn(tip_element,j));
-        domain_elem.insert(tip_element);
-
-        // Loop for adding layers
-        for (int ni = 0; ni < nlayers; ++ni){
-          // Insert all the neighbours of outer_nodes to to domain_elem
-          for (set<int>::iterator it = outer_nodes.begin(); it != outer_nodes.end(); ++it){
-            for (int k = 0; k < neighbours[*it].size(); ++k){
-              domain_elem.insert(neighbours[*it][k]);
-            }
+        // Compute the new crack propagation direction using K1, K2
+          double K1 = K.first, K2 = K.second;
+          cout << "K1: " << K1 << ", K2: " << K2 << endl;
+          double cpd = acos((3*pow(K2,2)+sqrt(pow(K1,4)+8*pow(K1,2)*pow(K2,2)))/(pow(K1,2)+9*pow(K2,2)));
+          if(K2 > 0){
+            cpd = -cpd;
           }
-        }
+          cout << "CPD: " << cpd*180/pi << endl;
+        // Define dx, dy in terms of the theta+orignal_direction_theta
 
-        double maxsig = -1;
-        for (set<int>::iterator it = domain_elem.begin(); it != domain_elem.end(); ++it){
-          int l = *it;
-          if(!discont[l] || discont[l] == 6){
-            VectorXi nodes = conn(l,all);
-            MatrixXd xv = x(nodes,all);
-            vector<int> dof = {   nodes(0)*2, nodes(0)*2+1,
-                                  nodes(1)*2, nodes(1)*2+1,
-                                  nodes(2)*2, nodes(2)*2+1,
-                                  nodes(3)*2, nodes(3)*2+1};
-            VectorXd u = un1(dof);
-
-            // cout << "Element " << l << endl;
-            for (int j = 0; j < ngp; ++j){
-              for (int k = 0; k < ngp; ++k){
-                double r = xgp[j], s =  xgp[k];
-                MatrixXd B0(2,4), jac(2,2), B1(3,4), B2 = MatrixXd::Zero(4,4), B3 = MatrixXd::Zero(4,8);
-
-                B0 << -(1-s)/4,  (1-s)/4, (1+s)/4, -(1+s)/4,
-                      -(1-r)/4,  -(1+r)/4,  (1+r)/4,  (1-r)/4;
-
-                jac = (B0*xv);
-
-                B1 << 1, 0, 0, 0,
-                      0, 0, 0, 1,
-                      0, 0.5, 0.5, 0;
-
-                B2(seq(0,1),seq(0,1)) = jac.inverse();
-                B2(seq(2,3),seq(2,3)) = jac.inverse();
-
-                // Define B3
-                B3(seq(0,1),seq(0,last,2)) = B0;
-                B3(seq(2,3),seq(1,last,2)) = B0;
-
-                MatrixXd B = B1*B2*B3;
-
-                MatrixXd strain = B*u;
-
-                MatrixXd D = constitutive(E, nu);
-                MatrixXd stress = D*strain;
-                MatrixXd str(2,2);
-                str << stress(0), stress(2),
-                  stress(2), stress(1);
-
-                double x = 0.25*((1-r)*(1-s)*xv(0,0)+(1+r)*(1-s)*xv(1,0)+(1+r)*(1+s)*xv(2,0)+(1-r)*(1+s)*xv(3,0));
-                double y = 0.25*((1-r)*(1-s)*xv(0,1)+(1+r)*(1-s)*xv(1,1)+(1+r)*(1+s)*xv(2,1)+(1-r)*(1+s)*xv(3,1));
-                double theta = atan2(y-cy,x-cx);
-
-                // Restricting crack to happen at a maximum of max_deviation angle (in radians).
-                // double max_deviation = pi/3;
-                // if( (abs(theta) < max_deviation || (abs(theta) < pi && abs(theta) > 2*max_deviation)) && cracked )
-                //   continue;
-                // cout << "Theta: " << theta*180/pi << endl;
-
-                MatrixXd T(2,2);
-                T << cos(theta), -sin(theta),
-                    sin(theta), cos(theta);
-
-                // cout << "T" << endl;
-                // cout << T << endl;
-                MatrixXd strt = T.transpose()*str*T;
-
-                // cout << "r: " << r << " s: "<< s<< endl;
-                // cout << "Str" << endl << str << endl;
-                // cout << "Str-rotated" << endl << strt(1,1) << endl << endl;
-                if(strt(1,1) > maxsig){
-                  maxsig = strt(1,1);
-                  dx = (x-cx)/sqrt(pow(x-cx,2)+pow(y-cy,2));
-                  dy = (y-cy)/sqrt(pow(x-cx,2)+pow(y-cy,2));
-                  // cout << xv << endl;
-                  // cout << "x-: " << x-cx << " y-: "<< y-cy << endl;
-                  // cout << "x: " << x << " y: "<< y<< endl;
-
-                }
-              }
-            }
-          }
-        }
         // cout << endl;
         cout << "dx: " << dx << " dy: "<< dy << endl;
         // cout << "cx: " << cx << " cy: "<< cy << endl;

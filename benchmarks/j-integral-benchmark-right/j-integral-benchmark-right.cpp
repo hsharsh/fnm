@@ -31,12 +31,12 @@ void boundary_conditions(VectorXd &un, VectorXd &un1, VectorXd &vn, VectorXd &vn
 
   VectorXi left = VectorXi::LinSpaced(41,1,862);
   left = left.array()-1;
-  bcx = 0;
+  bcy = 0;
   for(int i=0; i < left.size();++i){
     long node_bc = left(i);
     long idof = node_bc*2;
-    un(idof) = bcx;
-    un1(idof) = bcx;
+    un(idof+1) = bcy;
+    un1(idof+1) = bcy;
   }
 }
 
