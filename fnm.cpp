@@ -98,17 +98,17 @@ int main(int argc, char* argv[]){
     VectorXd mg = VectorXd::Zero(ndof);
     VectorXd fi = VectorXd::Zero(ndof);
     VectorXd fg = VectorXd::Zero(ndof);
-    VectorXd lcg = VectorXd::Zero(ndof);
+    VectorXd cg = VectorXd::Zero(ndof);
 
 
-    // Linearized Global Stiffness matrix assembly
+    // Vectorized Global Stiffness matrix assembly
     assemble_fi(fi, un, x, conn, discont, fn_elements, matprop, cze);
 
-    // Linearized Global Mass matrix assembly
+    // Vectorized Global Mass matrix assembly
     assemble_mg(mg, x, conn, discont, fn_elements, cze, rho, ndof);
 
-    // Linearized Global damping matrix
-    assemble_lcg(lcg, vn, x, conn, discont, fn_elements, cze, rho, alpha);
+    // Vectorized Global damping matrix
+    assemble_cg(cg, vn, x, conn, discont, fn_elements, cze, rho, alpha);
 
     // BC for fg
     // if(t < 1){
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]){
     boundary_conditions(un,un1,vn,vn1,fg);
 
     // Solver
-    an1(seq(0,ndof-1)) = mg.array().inverse()*(fg-fi-lcg).array();
+    an1(seq(0,ndof-1)) = mg.array().inverse()*(fg-fi-cg).array();
     vn1 = vn + an1*dt;
 
     // BC for velocity
@@ -156,10 +156,10 @@ int main(int argc, char* argv[]){
       if(j_integral == NAN){
         cerr << "No J-integral computed." << endl;
       }
-      double dk = 1e-5;
+
       pair<double,double> K = compute_K(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs, dk);
 
-      cout << "CPD: " << acos((3*pow(K.second,2)+sqrt(pow(K.first,4)+8*pow(K.first,2)*pow(K.second,2)))/(pow(K.first,2)+9*pow(K.second,2)))*180/pi << endl;
+      // cout << "CPD: " << acos((3*pow(K.second,2)+sqrt(pow(K.first,4)+8*pow(K.first,2)*pow(K.second,2)))/(pow(K.first,2)+9*pow(K.second,2)))*180/pi << endl;
       int c = max_tangential_crack(discont, neighbours, fn_elements, cparam, conn, x, nnod, nlyrs, K, j_integral);
       if (c == 1){
         crack_active = 0;
@@ -191,8 +191,16 @@ int main(int argc, char* argv[]){
     // cout << "x: " << endl;
     // cout << x(seq(1,ndof/2),all) << endl << endl;
     if(n >= srate){
-      write_j("j_int.m",t,compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs));
+      double J = compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs);
+      write_j("j_int.m", t, J);
       cout << "Time: " << t << endl;
+      pair<double,double> K = compute_K(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs, dk);
+      double cpd = acos((3*pow(K.second,2)+sqrt(pow(K.first,4)+8*pow(K.first,2)*pow(K.second,2)))/(pow(K.first,2)+9*pow(K.second,2)))*180/pi;
+      if(K.second > 0){
+        cpd = -cpd;
+      }
+      cout << "CPD: " << cpd << endl;
+      cout << "J: " << J << ", K1: " << K.first << ", K2: " << K.second << ", J(K1,K2):" << (K.first*K.first+K.second*K.second)/(E/(1-nu*nu)) << endl;
 
       MatrixXd xdef = MatrixXd::Zero(ndof/2,3);
 
@@ -229,7 +237,7 @@ int main(int argc, char* argv[]){
           s+=4;
         }
       }
-      string filename = "x0";   filename.append(to_string((long long)(t*1e5)));   filename.append(".vtk");
+      string filename = "x0";   filename.append(to_string((long long)(t*1e8)));   filename.append(".vtk");
       vtkwrite(filename,fl_conn,s,xdef,u,v,a,str,f);
       n = 1;
     }
@@ -239,7 +247,7 @@ int main(int argc, char* argv[]){
     if(cracked == 1){
       cracked = 2;
       dt/=rf;
-      srate = 5;
+      srate = 1;
     }
     // cout << dt << endl;
     t = t+dt;

@@ -248,7 +248,7 @@ pair<double,double> compute_K(vector<vector<int> > &neighbours, MatrixXi &conn, 
 
   // cout << x << endl;
   // cout << un1.size() << endl;
-  cout << "J: " << J << ", K1: " << K1 << ", K2: " << K2 << ", J(K1,K2):" << (K1*K1+K2*K2)/H << endl;
+  // cout << "J: " << J << ", K1: " << K1 << ", K2: " << K2 << ", J(K1,K2):" << (K1*K1+K2*K2)/H << endl;
 
   return make_pair(K1,K2);
 }

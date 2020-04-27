@@ -11,17 +11,18 @@
   using namespace std;
 
   #define pi 			3.141592653593
-  #define eps 		0.000001
+  #define eps 		0.00000000001
 
   // Parameters
 
-  // vector<double> xgp = {-sqrt(3.0/5.0), 0, sqrt(3.0/5.0)};
-  // vector<double> wgp = {5.0/9.0, 8.0/9.0, 5.0/9.0};
-  vector<double> xgp = {0};
-  vector<double> wgp = {2};
+  vector<double> xgp = {-sqrt(3.0/5.0), 0, sqrt(3.0/5.0)};
+  vector<double> wgp = {5.0/9.0, 8.0/9.0, 5.0/9.0};
+  // vector<double> xgp = {0};
+  // vector<double> wgp = {2};
   int ngp = wgp.size();
   double ar_tol,sy, j_tol, delta, smax, ashear;
   int cracked = 0;
+  double dk = 1e-5;
 
   string project_directory = "/home/hsharsh/fnm/";
   string path = project_directory+"data";

@@ -307,7 +307,7 @@ void assemble_fi(VectorXd &fi, VectorXd &un, MatrixXd &x, MatrixXi &conn, vector
   }
 }
 
-void assemble_lcg(VectorXd &lcg, VectorXd &vn, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> &fn_elements, vector<pair<int,int> > &cze, double rho, double alpha){
+void assemble_cg(VectorXd &cg, VectorXd &vn, MatrixXd &x, MatrixXi &conn, vector<int> &discont, map <int,element> &fn_elements, vector<pair<int,int> > &cze, double rho, double alpha){
   double area = 0;
   int nelm = conn.rows();
   for(int i = 0; i < nelm; ++i){
@@ -325,7 +325,7 @@ void assemble_lcg(VectorXd &lcg, VectorXd &vn, MatrixXd &x, MatrixXi &conn, vect
                             nodes(3)*2, nodes(3)*2+1};
 
       VectorXd v = vn(dof);
-      lcg(dof) = lcg(dof) + (cl*v);
+      cg(dof) = cg(dof) + (cl*v);
     }
     else{
       vector<vector<int> > lconn = fn_elements[i].conn;
@@ -340,7 +340,7 @@ void assemble_lcg(VectorXd &lcg, VectorXd &vn, MatrixXd &x, MatrixXi &conn, vect
                               nodes[2]*2, nodes[2]*2+1};
 
           VectorXd v = vn(dof);
-          lcg(dof) = lcg(dof) + (cl*v);
+          cg(dof) = cg(dof) + (cl*v);
         }
       }
     }
