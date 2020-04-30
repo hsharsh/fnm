@@ -179,13 +179,13 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
   double j_int = 0;
   int nelm = conn.rows();
 
-  // int tip_element = -1;
+  // int transition_element = -1;
   // for(int i = 0; i < nelm; ++i){
   //   if(discont[i] == 6){
-  //     tip_element = i;
+  //     transition_element = i;
   //   }
   // }
-  int tip_element = -1, crack_tip = -1;
+  int transition_element = -1, crack_tip = -1;
   for(int i = 0; i < nelm; ++i){
     if(discont[i] == 6){
       vector<vector<int> > lconn = fn_elements[i].conn;
@@ -199,17 +199,17 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
       }
     }
     if(discont[i] == 6)
-      tip_element = i;
+      transition_element = i;
   }
 
-  // cout << "Crack tip element -> " << tip_element << ", " << "Crack tip -> " << crack_tip << endl;
-  if(tip_element == -1 || crack_tip == -1){
+  // cout << "Crack tip element -> " << transition_element << ", " << "Crack tip -> " << crack_tip << endl;
+  if(transition_element == -1 || crack_tip == -1){
     cerr << "Crack tip is indeterminate. J-integral will not computed" << endl;
     return 1;
   }
 
-  // // cout << "NN element -> " << tip_element << endl;
-  // if(tip_element == -1){
+  // // cout << "NN element -> " << transition_element << endl;
+  // if(transition_element == -1){
   //   // cerr << "Crack tip is indeterminate. J-intergral not computed" << endl;
   //   return NAN;
   // }
@@ -221,10 +221,10 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
 
   set<int> domain_elem, inner_nodes, outer_nodes;
 
-  // Seed domain with the tip_element and outer with ndoes of tip_element
+  // Seed domain with the transition_element and outer with ndoes of transition_element
   for(int j = 0; j < conn.cols(); ++j)
-    outer_nodes.insert(conn(tip_element,j));
-  domain_elem.insert(tip_element);
+    outer_nodes.insert(conn(transition_element,j));
+  domain_elem.insert(transition_element);
 
   // Loop for adding layers
   for (int ni = 0; ni < nlayers; ++ni){
@@ -300,6 +300,8 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
       }
     }
   }
+
+  // q[crack_tip] = 1;
 
   // cout << endl << "Q: " << endl;
   // cout << q << endl << endl;

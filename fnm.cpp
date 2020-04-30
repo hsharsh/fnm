@@ -58,7 +58,7 @@ int main(int argc, char* argv[]){
   1 -> Cracked/Unprocessed
   2 -> Cracked/Processed
   3 -> Crack tip/Transition element
-  4 -> Element adajacent to crack tip changed for compatibility/Transition element
+  4 -> Element adajacent to crack tip / Changed for compatibility with transition element
   5 -> 3/Processed
   6 -> 4/Processed
   */
@@ -247,7 +247,7 @@ int main(int argc, char* argv[]){
     if(cracked == 1){
       cracked = 2;
       dt/=rf;
-      srate = 1;
+      srate = srate/rf;
     }
     // cout << dt << endl;
     t = t+dt;

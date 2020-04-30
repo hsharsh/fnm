@@ -74,7 +74,7 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &co
   discont[408] = 4;
 }
 
-tmax = 10
+tmax = 15
 dt = 0.02
 E = 1
 nu = 0
