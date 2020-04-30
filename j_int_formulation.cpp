@@ -301,7 +301,7 @@ double compute_j(vector<vector<int> > &neighbours, MatrixXi &conn, MatrixXd &x, 
     }
   }
 
-  // q[crack_tip] = 1;
+  q[crack_tip] = 1;
 
   // cout << endl << "Q: " << endl;
   // cout << q << endl << endl;
