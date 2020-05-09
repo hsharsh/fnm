@@ -160,8 +160,8 @@ int main(int argc, char* argv[]){
       pair<double,double> K = compute_K(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs, dk);
 
       // cout << "CPD: " << acos((3*pow(K.second,2)+sqrt(pow(K.first,4)+8*pow(K.first,2)*pow(K.second,2)))/(pow(K.first,2)+9*pow(K.second,2)))*180/pi << endl;
-      // int c = max_tangential_crack(discont, neighbours, fn_elements, cparam, conn, x, un1, ndof, E, nu, j_integral, nlyrs); // Discrete
-      int c = max_tangential_crack(discont, neighbours, fn_elements, cparam, conn, x, nnod, nlyrs, K, j_integral);       // SIF
+      int c = max_tangential_crack(discont, neighbours, fn_elements, cparam, conn, x, un1, ndof, E, nu, j_integral, nlyrs); // Discrete
+      // int c = max_tangential_crack(discont, neighbours, fn_elements, cparam, conn, x, nnod, nlyrs, K, j_integral);       // SIF
       if (c == 1){
         crack_active = 0;
       }
