@@ -35,11 +35,11 @@ void crack_def(vector<int> &discont, map<int,element> &fn_elements, MatrixXi &co
   discont[408] = 4;
 }
 
-int max_tangential_crack(vector<int> &discont, vector<vector<int> > &neighbours, map <int,element> &fn_elements, map <pair<int,int>,double> &cparam, MatrixXi &conn, MatrixXd &x, VectorXd &un1, int &ndof, double E, double nu, double j_integral, int nlayers){
+// Computing crack propagation by the formulation for maximum tangential stress formulation given in ABAQUS documentation.
+
+int max_tangential_crack(vector<int> &discont, vector<vector<int> > &neighbours, map <int,element> &fn_elements, map <pair<int,int>,double> &cparam, MatrixXi &conn, MatrixXd &x, int nnod, int nlayers, pair<double,double> K, double j_integral){
   int ci = 0; // Crack-Initiated: Return paramater indicating whether a crack was added or not
 
-  // vector<double> xgp = {0};
-  // vector<double> wgp = {2};
   int nelm = conn.rows();
   int ngp = wgp.size();
 
@@ -53,31 +53,20 @@ int max_tangential_crack(vector<int> &discont, vector<vector<int> > &neighbours,
         element fn;
 
         // Find the position of the crack-tip
-        double cx = (xv(0,0)+xv(1,0)+xv(2,0)+xv(3,0))/4, cy = (xv(0,1)+xv(1,1)+xv(2,1)+xv(3,1))/4;
 
+        int tip_element = i, crack_tip = -1;
 
-        for(int j = 0; j < 4; j++){
-          if(cparam.find(make_pair(nodes(j),nodes((j+1)%4))) != cparam.end()){
-            double e = cparam[make_pair(nodes(j),nodes((j+1)%4))];
-            cx = xv(j,0)*(1-e)+xv((j+1)%4,0)*e;
-            cy = xv(j,1)*(1-e)+xv((j+1)%4,1)*e;
-            break;
-          }
-          if(cparam.find(make_pair(nodes((j+1)%4),nodes(j))) != cparam.end()){
-            double e = 1-cparam[make_pair(nodes((j+1)%4),nodes(j))];
-            cx = xv(j,0)*(1-e)+xv((j+1)%4,0)*e;
-            cy = xv(j,1)*(1-e)+xv((j+1)%4,1)*e;
-            break;
+        vector<vector<int> > lconn = fn_elements[tip_element].conn;
+        for (int j = 0; j < lconn.size(); ++j){
+          vector<int> nodes = lconn[j];
+          for (int k = 0; k < nodes.size(); ++k){
+            if(nodes[k] >= nnod){
+              crack_tip = nodes[k];
+            }
           }
         }
-
-        double dx, dy;
-
-
-        int tip_element = i;
-
-        // Find the domain elements
-        set<int> domain_elem, outer_nodes;
+        // Compute the crack direction
+        set<int> domain_elem, inner_nodes, outer_nodes;
 
         // Seed domain with the tip_element and outer with ndoes of tip_element
         for(int j = 0; j < conn.cols(); ++j)
@@ -86,7 +75,7 @@ int max_tangential_crack(vector<int> &discont, vector<vector<int> > &neighbours,
 
         // Loop for adding layers
         for (int ni = 0; ni < nlayers; ++ni){
-          // Insert all the neighbours of outer_nodes to to domain_elem
+          // Insert all the neighbours of outer_nodes to domain_elem
           for (set<int>::iterator it = outer_nodes.begin(); it != outer_nodes.end(); ++it){
             for (int k = 0; k < neighbours[*it].size(); ++k){
               domain_elem.insert(neighbours[*it][k]);
@@ -94,84 +83,45 @@ int max_tangential_crack(vector<int> &discont, vector<vector<int> > &neighbours,
           }
         }
 
-        double maxsig = -1;
+        double cx = x(crack_tip,0), cy = x(crack_tip,1);
+        // cout << cx << " " << cy << endl;
+
+        double ctheta = 0;
+        int npoints = 0;
         for (set<int>::iterator it = domain_elem.begin(); it != domain_elem.end(); ++it){
-          int l = *it;
-          if(!discont[l] || discont[l] == 6){
-            VectorXi nodes = conn(l,all);
-            MatrixXd xv = x(nodes,all);
-            vector<int> dof = {   nodes(0)*2, nodes(0)*2+1,
-                                  nodes(1)*2, nodes(1)*2+1,
-                                  nodes(2)*2, nodes(2)*2+1,
-                                  nodes(3)*2, nodes(3)*2+1};
-            VectorXd u = un1(dof);
-
-            // cout << "Element " << l << endl;
-            for (int j = 0; j < ngp; ++j){
-              for (int k = 0; k < ngp; ++k){
-                double r = xgp[j], s =  xgp[k];
-                MatrixXd B0(2,4), jac(2,2), B1(3,4), B2 = MatrixXd::Zero(4,4), B3 = MatrixXd::Zero(4,8);
-
-                B0 << -(1-s)/4,  (1-s)/4, (1+s)/4, -(1+s)/4,
-                      -(1-r)/4,  -(1+r)/4,  (1+r)/4,  (1-r)/4;
-
-                jac = (B0*xv);
-
-                B1 << 1, 0, 0, 0,
-                      0, 0, 0, 1,
-                      0, 0.5, 0.5, 0;
-
-                B2(seq(0,1),seq(0,1)) = jac.inverse();
-                B2(seq(2,3),seq(2,3)) = jac.inverse();
-
-                // Define B3
-                B3(seq(0,1),seq(0,last,2)) = B0;
-                B3(seq(2,3),seq(1,last,2)) = B0;
-
-                MatrixXd B = B1*B2*B3;
-
-                MatrixXd strain = B*u;
-
-                MatrixXd D = constitutive(E, nu);
-                MatrixXd stress = D*strain;
-                MatrixXd str(2,2);
-                str << stress(0), stress(2),
-                  stress(2), stress(1);
-
-                double x = 0.25*((1-r)*(1-s)*xv(0,0)+(1+r)*(1-s)*xv(1,0)+(1+r)*(1+s)*xv(2,0)+(1-r)*(1+s)*xv(3,0));
-                double y = 0.25*((1-r)*(1-s)*xv(0,1)+(1+r)*(1-s)*xv(1,1)+(1+r)*(1+s)*xv(2,1)+(1-r)*(1+s)*xv(3,1));
-                double theta = atan2(y-cy,x-cx);
-
-                // Restricting crack to happen at a maximum of max_deviation angle (in radians).
-                // double max_deviation = pi/3;
-                // if( (abs(theta) < max_deviation || (abs(theta) < pi && abs(theta) > 2*max_deviation)) && cracked )
-                //   continue;
-                // cout << "Theta: " << theta*180/pi << endl;
-
-                MatrixXd T(2,2);
-                T << cos(theta), -sin(theta),
-                    sin(theta), cos(theta);
-
-                // cout << "T" << endl;
-                // cout << T << endl;
-                MatrixXd strt = T.transpose()*str*T;
-
-                // cout << "r: " << r << " s: "<< s<< endl;
-                // cout << "Str" << endl << str << endl;
-                // cout << "Str-rotated" << endl << strt(1,1) << endl << endl;
-                if(strt(1,1) > maxsig){
-                  maxsig = strt(1,1);
-                  dx = (x-cx)/sqrt(pow(x-cx,2)+pow(y-cy,2));
-                  dy = (y-cy)/sqrt(pow(x-cx,2)+pow(y-cy,2));
-                  // cout << xv << endl;
-                  // cout << "x-: " << x-cx << " y-: "<< y-cy << endl;
-                  // cout << "x: " << x << " y: "<< y<< endl;
-
+          if(discont[*it]){
+            vector<vector<int> > lconn = fn_elements[*it].conn;
+            for (int j = 0; j < lconn.size(); ++j){
+              vector<int> nodes = lconn[j];
+              for (int k = 0; k < nodes.size(); ++k){
+                if(nodes[k] >= nnod){
+                  // cout << x(nodes[k],0) << " " << x(nodes[k],1) << endl;
+                  if(abs(x(nodes[k],0)-cx) > eps || abs(x(nodes[k],1)-cy) > eps){
+                    ctheta += atan2(cy-x(nodes[k],1),cx-x(nodes[k],0));
+                    npoints++;
+                    // cout << atan2(cy-x(nodes[k],1),cx-x(nodes[k],0)) << " ";
+                  }
                 }
               }
             }
           }
         }
+        // cout << endl << npoints << endl;
+        ctheta = ctheta/npoints;
+
+        // Compute the new crack propagation direction using K1, K2
+          double K1 = K.first, K2 = K.second;
+          cout << "K1: " << K1 << ", K2: " << K2 << endl;
+          double cpd = acos((3*pow(K2,2)+sqrt(pow(K1,4)+8*pow(K1,2)*pow(K2,2)))/(pow(K1,2)+9*pow(K2,2)));
+          if(K2 > 0){
+            cpd = -cpd;
+          }
+          cout << "CPD: " << cpd*180/pi << endl;
+        // Define dx, dy in terms of the theta+orignal_direction_theta
+        double dx, dy;
+        cpd = cpd + ctheta;
+        dx = cos(cpd);
+        dy = sin(cpd);
         // cout << endl;
         cout << "dx: " << dx << " dy: "<< dy << endl;
         // cout << "cx: " << cx << " cy: "<< cy << endl;

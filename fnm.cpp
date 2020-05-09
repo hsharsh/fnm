@@ -160,7 +160,8 @@ int main(int argc, char* argv[]){
       pair<double,double> K = compute_K(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs, dk);
 
       // cout << "CPD: " << acos((3*pow(K.second,2)+sqrt(pow(K.first,4)+8*pow(K.first,2)*pow(K.second,2)))/(pow(K.first,2)+9*pow(K.second,2)))*180/pi << endl;
-      int c = max_tangential_crack(discont, neighbours, fn_elements, cparam, conn, x, nnod, nlyrs, K, j_integral);
+      // int c = max_tangential_crack(discont, neighbours, fn_elements, cparam, conn, x, un1, ndof, E, nu, j_integral, nlyrs); // Discrete
+      int c = max_tangential_crack(discont, neighbours, fn_elements, cparam, conn, x, nnod, nlyrs, K, j_integral);       // SIF
       if (c == 1){
         crack_active = 0;
       }
@@ -181,24 +182,27 @@ int main(int argc, char* argv[]){
     // Remove elements which have area smaller than a certain tolerance (defined in utilities.cpp)
     remove_singular_elements(fn_elements,x);
 
-    // Compute nodal properties
-    compute_properties(stress, discont, fn_elements, conn, x, un1, ndof, E, nu, cze);
-
     // File writing operations
-    vector<vector<int> > fl_conn;
-    MatrixXd conn_w;
-    long s = 0;
-    // cout << "x: " << endl;
-    // cout << x(seq(1,ndof/2),all) << endl << endl;
     if(n >= srate){
-      double J = compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs);
-      write_j("j_int.m", t, J);
+      // Compute nodal properties
       cout << "Time: " << t << endl;
+
+      compute_properties(stress, discont, fn_elements, conn, x, un1, ndof, E, nu, cze);
+
+      vector<vector<int> > fl_conn;
+      MatrixXd conn_w;
+      long s = 0;
+      // cout << "x: " << endl;
+      // cout << x(seq(1,ndof/2),all) << endl << endl;
+
+      double J = compute_j(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs);
       pair<double,double> K = compute_K(neighbours, conn, x, un1, discont, fn_elements, cparam, nnod, E, nu, nlyrs, dk);
       double cpd = acos((3*pow(K.second,2)+sqrt(pow(K.first,4)+8*pow(K.first,2)*pow(K.second,2)))/(pow(K.first,2)+9*pow(K.second,2)))*180/pi;
       if(K.second > 0){
         cpd = -cpd;
       }
+      write_crack_param("crack_param.m", t, J, K.first, K.second);
+
       cout << "CPD: " << cpd << endl;
       cout << "J: " << J << ", K1: " << K.first << ", K2: " << K.second << ", J(K1,K2):" << (K.first*K.first+K.second*K.second)/(E/(1-nu*nu)) << endl;
 
@@ -247,7 +251,7 @@ int main(int argc, char* argv[]){
     if(cracked == 1){
       cracked = 2;
       dt/=rf;
-      srate = srate/rf;
+      srate = 1; // srate/rf;
     }
     // cout << dt << endl;
     t = t+dt;

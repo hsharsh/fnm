@@ -210,13 +210,13 @@
     }
   }
 
-  void write_j(string filename, double t, double j_integral){
+  void write_crack_param(string filename, double t, double j_integral, double K1, double K2){
     string p = path;
     p.append(filename);
     ofstream writer(p,ofstream::out | ofstream::app);
 
     if(writer.is_open()){
-      writer << t << " " << j_integral << "\n";
+      writer << t << " " << j_integral << " " << K1 << " " << K2 << "\n";
       writer.close();
     }
     else{
